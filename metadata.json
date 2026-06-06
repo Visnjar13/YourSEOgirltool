@@ -1,0 +1,6 @@
+{
+  "name": "SEO Workspace Studio",
+  "description": "An interactive SEO suite for Keyword Mapping + Clustering, Content Clustering, Content Brief generation, and Meta Tag analysis, shareable with teams.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

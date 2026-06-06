@@ -1,0 +1,81 @@
+{
+  "entities": {
+    "Workspace": {
+      "title": "Workspace",
+      "description": "An SEO workspace that can be shared with others.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "description": "The name of the SEO workspace" },
+        "description": { "type": "string" },
+        "createdBy": { "type": "string", "description": "The UID of the user who created it" },
+        "creatorEmail": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "isPublic": { "type": "boolean", "description": "Whether others can view this workspace via shared link" }
+      },
+      "required": ["id", "name", "createdBy", "createdAt", "updatedAt"]
+    },
+    "KeywordItem": {
+      "title": "Keyword Item",
+      "description": "A single keyword within a cluster map.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "keyword": { "type": "string" },
+        "intent": { "type": "string", "enum": ["Informational", "Transactional", "Commercial", "Navigational"] },
+        "volume": { "type": "number" },
+        "difficulty": { "type": "number", "description": "Keyword difficulty from 0 to 100" },
+        "clusterName": { "type": "string", "description": "The cluster group this keyword belongs to" },
+        "cpc": { "type": "number" },
+        "mappedUrl": { "type": "string", "description": "The priority page assigned to this keyword" }
+      },
+      "required": ["id", "keyword", "volume", "difficulty"]
+    },
+    "ContentCluster": {
+      "title": "Content Cluster",
+      "description": "Concept/topic grouping of keywords and outline summaries.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "clusterName": { "type": "string", "description": "The main topic or pillar theme" },
+        "pillarPage": { "type": "string" },
+        "subtopics": { "type": "array" }
+      },
+      "required": ["id", "clusterName"]
+    },
+    "SEOTemplate": {
+      "title": "SEO Template Output",
+      "description": "Custom SEO templates generated (e.g., briefs, meta titles, outlines).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "workspaceId": { "type": "string" },
+        "title": { "type": "string" },
+        "type": { "type": "string", "enum": ["brief", "outline", "meta_tags", "intent_finder"] },
+        "inputParams": { "type": "object" },
+        "outputJson": { "type": "string", "description": "JSON string or markdown output" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "workspaceId", "title", "type", "outputJson", "createdAt"]
+    }
+  },
+  "firestore": {
+    "workspaces/{workspaceId}": {
+      "schema": "Workspace",
+      "description": "Top-level shared SEO workspaces"
+    },
+    "workspaces/{workspaceId}/keywords/{keywordId}": {
+      "schema": "KeywordItem",
+      "description": "Keywords within the workspace"
+    },
+    "workspaces/{workspaceId}/contentClusters/{clusterId}": {
+      "schema": "ContentCluster",
+      "description": "Content clusters within the workspace"
+    },
+    "workspaces/{workspaceId}/templates/{templateId}": {
+      "schema": "SEOTemplate",
+      "description": "Generated briefs or outlines within the workspace"
+    }
+  }
+}

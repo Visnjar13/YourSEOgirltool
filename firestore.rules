@@ -1,0 +1,191 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default catch-all deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ============================================
+    // GLOBAL PRIMITIVES & HELPER FUNCTIONS
+    // ============================================
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // ============================================
+    // WORKSPACE RULES
+    // ============================================
+
+    match /workspaces/{workspaceId} {
+      
+      // Validation helper for Workspace schema mapping
+      function isValidWorkspace(data) {
+        return data.keys().hasAll(['id', 'name', 'createdBy', 'createdAt', 'updatedAt'])
+          && data.id is string && data.id.size() <= 128
+          && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+          && data.createdBy == request.auth.uid
+          && (data.get('description', '') is string && data.get('description', '').size() <= 500)
+          && (data.get('creatorEmail', '') is string && data.get('creatorEmail', '').size() <= 128)
+          && (data.get('isPublic', false) is bool);
+      }
+
+      // Check if user is the direct creator of the workspace
+      function isWorkspaceCreator() {
+        return isSignedIn() && (
+          (resource != null && resource.data.createdBy == request.auth.uid) ||
+          (resource == null && incoming().createdBy == request.auth.uid)
+        );
+      }
+
+      // Workspaces with isPublic set to true are visible to anyone
+      allow read: if (resource != null && resource.data.isPublic == true) || (isWorkspaceCreator());
+      
+      allow create: if isVerified() 
+        && isValidId(workspaceId) 
+        && isValidWorkspace(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isVerified() 
+        && isWorkspaceCreator() 
+        && isValidWorkspace(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().createdBy == existing().createdBy // Creator is immutable
+        && (
+          // Whitelisting exact elements that are allowed to transition during edit/update
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'name', 'description', 'isPublic', 'updatedAt', 'keywords', 'keywordClusters', 'contentClusters', 'templates'
+          ])
+        );
+
+      allow delete: if isVerified() && isWorkspaceCreator();
+
+      // ============================================
+      // SUBCOLLECTIONS WITHIN THE WORKSPACE SILO
+      // ============================================
+
+      // Keywords Subcollection
+      match /keywords/{keywordId} {
+        
+        function isValidKeywordItem(data) {
+          return data.keys().hasAll(['id', 'keyword', 'volume', 'difficulty'])
+            && data.id is string && data.id.size() <= 128
+            && data.keyword is string && data.keyword.size() > 0 && data.keyword.size() <= 250
+            && (data.volume is int || data.volume is float || data.volume == null)
+            && (data.difficulty is int || data.difficulty is float || data.difficulty == null)
+            && (data.get('intent', 'Informational') in ['Informational', 'Transactional', 'Commercial', 'Navigational'])
+            && (data.get('clusterName', '') is string && data.get('clusterName', '').size() <= 150)
+            && (data.get('mappedUrl', '') is string && data.get('mappedUrl', '').size() <= 500);
+        }
+
+        // Derives permissions from the parent Workspace
+        allow read: if get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.isPublic == true || 
+          get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid;
+
+        allow create: if isVerified() 
+          && isValidId(keywordId)
+          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid
+          && isValidKeywordItem(incoming());
+
+        allow update: if isVerified()
+          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid
+          && isValidKeywordItem(incoming())
+          && (
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'keyword', 'intent', 'volume', 'difficulty', 'clusterName', 'cpc', 'mappedUrl'
+            ])
+          );
+
+        allow delete: if isVerified() 
+          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid;
+      }
+
+      // Content Clusters Subcollection
+      match /contentClusters/{clusterId} {
+        
+        function isValidContentCluster(data) {
+          return data.keys().hasAll(['id', 'clusterName'])
+            && data.id is string && data.id.size() <= 128
+            && data.clusterName is string && data.clusterName.size() > 0 && data.clusterName.size() <= 200
+            && (data.get('pillarPage', '') is string && data.get('pillarPage', '').size() <= 500)
+            && (data.get('subtopics', []) is list && data.get('subtopics', []).size() <= 100);
+        }
+
+        allow read: if get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.isPublic == true || 
+          get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid;
+
+        allow create: if isVerified()
+          && isValidId(clusterId)
+          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid
+          && isValidContentCluster(incoming());
+
+        allow update: if isVerified()
+          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid
+          && isValidContentCluster(incoming())
+          && (
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'clusterName', 'pillarPage', 'subtopics'
+            ])
+          );
+
+        allow delete: if isVerified()
+          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid;
+      }
+
+      // SEOTemplate Subcollection
+      match /templates/{templateId} {
+
+        function isValidSEOTemplate(data) {
+          return data.keys().hasAll(['id', 'workspaceId', 'title', 'type', 'outputJson', 'createdAt'])
+            && data.id is string && data.id.size() <= 128
+            && data.workspaceId is string && data.workspaceId.size() <= 128
+            && data.title is string && data.title.size() > 0 && data.title.size() <= 200
+            && data.type in ['brief', 'outline', 'meta_tags', 'intent_finder']
+            && data.outputJson is string && data.outputJson.size() <= 250000;
+        }
+
+        allow read: if get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.isPublic == true || 
+          get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid;
+
+        allow create: if isVerified()
+          && isValidId(templateId)
+          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid
+          && isValidSEOTemplate(incoming())
+          && incoming().createdAt == request.time;
+
+        allow update: if isVerified()
+          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid
+          && isValidSEOTemplate(incoming())
+          && incoming().createdAt == existing().createdAt
+          && (
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'title', 'outputJson'
+            ])
+          );
+
+        allow delete: if isVerified()
+          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid;
+      }
+    }
+  }
+}
