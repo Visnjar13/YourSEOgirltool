@@ -516,6 +516,18 @@ app.post("/api/gemini/parse-image", async (req, res) => {
 // VITE MIDDLEWARE HANDLING & ROUTING
 // ============================================
 
+// Serve sitemap.xml explicitly to bypass any SPA html-fallback
+app.get("/sitemap.xml", (req, res) => {
+  res.header("Content-Type", "application/xml");
+  res.sendFile(path.join(process.cwd(), "public", "sitemap.xml"));
+});
+
+// Serve robots.txt explicitly
+app.get("/robots.txt", (req, res) => {
+  res.header("Content-Type", "text/plain");
+  res.send("User-agent: *\nAllow: /\nSitemap: https://app.yourseogirl.com/sitemap.xml\n");
+});
+
 async function bootstrap() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
