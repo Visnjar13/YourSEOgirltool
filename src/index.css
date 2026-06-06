@@ -5,4 +5,30 @@
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Plus Jakarta Sans", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* YourSEOGirl Signature Brand Hot Pink Mapping */
+  --color-blue-50: #fff1f6;
+  --color-blue-100: #ffe3ef;
+  --color-blue-200: #ffc2df;
+  --color-blue-300: #ff91c7;
+  --color-blue-400: #f462b4;
+  --color-blue-500: #e042a4;
+  --color-blue-600: #d53ea5; /* Primary YourSEOGirl Fuchsia-Pink */
+  --color-blue-700: #b62688;
+  --color-blue-800: #971c6f;
+  --color-blue-900: #7e165d;
+  --color-blue-950: #4d0536;
+
+  /* YourSEOGirl Mustard-Gold / Amber Mapping */
+  --color-indigo-50: #fdfbeb;
+  --color-indigo-100: #fef2c7;
+  --color-indigo-200: #fde38a;
+  --color-indigo-300: #fcd04d;
+  --color-indigo-400: #fbbf24;
+  --color-indigo-500: #e2ba3c; /* Primary YourSEOGirl Gold */
+  --color-indigo-600: #cc9f2d;
+  --color-indigo-700: #a87f1e;
+  --color-indigo-800: #866318;
+  --color-indigo-900: #644912;
+  --color-indigo-950: #3c2907;
 }

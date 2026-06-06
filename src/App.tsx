@@ -480,9 +480,11 @@ broker lead generation pricing packages`;
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl -z-10 pointer-events-none"></div>
         <div className="text-center flex flex-col items-center justify-center space-y-4 relative z-10 animate-pulse duration-1000">
           <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-500/15">
-            <TrendingUp className="w-6 h-6" />
+            <TrendingUp className="w-6 h-6 text-white" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900">{APP_TITLE}</h1>
+          <h1 className="text-xl font-black tracking-tight text-slate-900">
+            <span className="text-[#cc9f2d]">YourSEO</span><span className="text-[#d53ea5]">girl</span> <span className="font-medium text-slate-500 text-sm">Keyword Planner</span>
+          </h1>
           <p className="text-xs text-slate-500 font-mono flex items-center gap-2">
             <RefreshCw className="w-3.5 h-3.5 text-blue-500 animate-spin" />
             Initializing secure workspaces...
@@ -520,15 +522,15 @@ broker lead generation pricing packages`;
             
             {/* Logo and Brand Header */}
             <div className="text-center flex flex-col items-center">
-              <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-500/15 hover:scale-105 transition-transform duration-300 mb-6">
-                <TrendingUp className="w-8 h-8" />
+              <div className="w-14 h-14 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-500/15 hover:scale-105 transition-transform duration-300 mb-6">
+                <TrendingUp className="w-8 h-8 text-white" />
               </div>
-              <div className="space-y-2.5 mb-4">
-                <h1 className="text-2xl font-black text-slate-950 tracking-tight leading-none bg-gradient-to-r from-slate-950 via-slate-800 to-blue-700 bg-clip-text text-transparent">
-                  {APP_TITLE}
+              <div className="space-y-2 mb-4">
+                <h1 className="text-3xl font-black tracking-tight leading-none">
+                  <span className="text-[#cc9f2d]">YourSEO</span><span className="text-[#d53ea5]">girl</span>
                 </h1>
                 <p className="text-[10px] text-blue-600 font-bold uppercase tracking-[0.12em] font-sans antialiased">
-                  {APP_TAGLINE}
+                  Keyword, Silo & Content Architect
                 </p>
               </div>
               <p className="text-xs text-slate-500 leading-relaxed max-w-sm">
@@ -614,12 +616,13 @@ broker lead generation pricing packages`;
         <div>
           {/* Brand header / logo */}
           <div className="p-6 flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab("dashboard")}>
-            <div className="w-9 h-9 bg-[#2563eb] rounded-lg flex items-center justify-center text-white shadow-md shadow-blue-900/30">
-              <TrendingUp className="w-5 h-5" />
+            <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-xl flex items-center justify-center text-white shadow-md shadow-pink-900/40">
+              <TrendingUp className="w-5 h-5 text-white animate-pulse" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-white tracking-tight leading-none font-sans">
-                {APP_TITLE}
+              <h1 className="text-sm font-black text-white tracking-tight leading-none font-sans">
+                <span className="text-[#e2ba3c]">YourSEO</span><span className="text-[#d53ea5]">girl</span>
+                <span className="block text-[9.5px] text-slate-400 font-medium mt-1 uppercase tracking-wider">Plan Studio</span>
               </h1>
             </div>
           </div>
