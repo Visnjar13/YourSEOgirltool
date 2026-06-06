@@ -65,6 +65,10 @@ export default function App() {
   const [bulkImportedText, setBulkImportedText] = useState("");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
 
+  // Constant branding for YourSEOgirl Keyword Planner
+  const APP_TITLE = "YourSEOgirl Keyword Planner";
+  const APP_TAGLINE = "Keyword, Silo & Content Architect for yourseogirl.com";
+
   // Subscribe to Authentication state changes on startup
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -358,7 +362,7 @@ export default function App() {
   const handleTriggerAiEngine = async () => {
     if (!activeWorkspace) return;
     setAiEngineLoading(true);
-    triggerAlert("success", "Initiating KeywordIQ Senior SEO Strategy Engine...");
+    triggerAlert("success", `Initiating ${APP_TITLE} Senior SEO Strategy Engine...`);
     
     try {
       let keywordsToCluster = activeWorkspace.keywords || [];
@@ -469,6 +473,124 @@ broker lead generation pricing packages`;
   const plannedPagesCount = activeWorkspace?.contentClusters?.reduce((acc, hub) => acc + 1 + (hub.supportingArticles?.length || 0), 0) || 0;
   const templatesCount = activeWorkspace?.templates?.length || 0;
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center text-slate-850 font-sans antialiased relative overflow-hidden" id="auth-loading-screen">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl -z-10 pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl -z-10 pointer-events-none"></div>
+        <div className="text-center flex flex-col items-center justify-center space-y-4 relative z-10 animate-pulse duration-1000">
+          <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-500/15">
+            <TrendingUp className="w-6 h-6" />
+          </div>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">{APP_TITLE}</h1>
+          <p className="text-xs text-slate-500 font-mono flex items-center gap-2">
+            <RefreshCw className="w-3.5 h-3.5 text-blue-500 animate-spin" />
+            Initializing secure workspaces...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const sharedId = params.get("workspaceId");
+
+  if (!currentUser && !sharedId) {
+    return (
+      <div className="min-h-screen bg-slate-50/50 flex flex-col items-center justify-center text-slate-800 font-sans antialiased relative px-4 py-12 overflow-y-auto selection:bg-blue-600 selection:text-white" id="welcome-lock-screen">
+        {/* Soft Decorative Ambient Accents in Light Gray/Blue */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-100/20 rounded-full blur-3.5xl -z-10 pointer-events-none"></div>
+        <div className="absolute bottom-10 right-10 w-96 h-96 bg-indigo-100/20 rounded-full blur-3xl -z-10 pointer-events-none"></div>
+
+        {/* Alert Banner inside Welcome View */}
+        {alert && (
+          <div 
+            id="welcome-alert-banner"
+            className="fixed top-6 right-6 z-50 px-5 py-3.5 rounded-2xl shadow-xl border text-xs font-semibold flex items-center gap-3 transition-all transform animate-in fade-in slide-in-from-top bg-white border-rose-200 text-rose-600 shadow-rose-100/30"
+          >
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+            <span>{alert.message}</span>
+          </div>
+        )}
+
+        <div className="max-w-md w-full relative z-10 animate-in fade-in zoom-in-95 duration-500">
+          
+          {/* Main Focused Panel - Crisp White UI matching local time preferences */}
+          <div className="bg-white rounded-3xl border border-slate-200/70 p-8 shadow-2xl shadow-slate-100 flex flex-col space-y-6">
+            
+            {/* Logo and Brand Header */}
+            <div className="text-center flex flex-col items-center">
+              <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-500/15 hover:scale-105 transition-transform duration-300 mb-6">
+                <TrendingUp className="w-8 h-8" />
+              </div>
+              <div className="space-y-2.5 mb-4">
+                <h1 className="text-2xl font-black text-slate-950 tracking-tight leading-none bg-gradient-to-r from-slate-950 via-slate-800 to-blue-700 bg-clip-text text-transparent">
+                  {APP_TITLE}
+                </h1>
+                <p className="text-[10px] text-blue-600 font-bold uppercase tracking-[0.12em] font-sans antialiased">
+                  {APP_TAGLINE}
+                </p>
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed max-w-sm">
+                Design, map, and organize high-intent keyword silos for YourSEOgirl clients. Join seamlessly with Google Secure Ingress to lock and store your mapping data privately.
+              </p>
+            </div>
+
+            {/* Custom Features/Benefits List */}
+            <div className="space-y-4 pt-2 border-t border-slate-100">
+              <div className="flex gap-3 items-start">
+                <div className="p-1.5 bg-blue-50 rounded-lg text-blue-600 shrink-0">
+                  <Shield className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-[11px] font-bold text-slate-800">Private Campaign Sandboxing</h4>
+                  <p className="text-[10px] text-slate-500 mt-0.5 leading-relaxed">
+                    Prevent other users from seeing your keyword research and silos. Everything is scoped to your Google login.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 items-start">
+                <div className="p-1.5 bg-indigo-50 rounded-lg text-indigo-600 shrink-0">
+                  <Layers className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-[11px] font-bold text-slate-800">Multi-Campaign Architecture</h4>
+                  <p className="text-[10px] text-slate-500 mt-0.5 leading-relaxed">
+                    Set up distinct workspaces for any clients, cluster keyword targets, and design beautiful supporting articles.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* CTA action wrapper */}
+            <div className="pt-4 border-t border-slate-100 space-y-3">
+              <button
+                onClick={async () => {
+                  try {
+                    await signInWithGoogle();
+                    triggerAlert("success", "Successfully authenticated to your cloud workspace!");
+                  } catch (err) {
+                    triggerAlert("error", "Secure Authentication paused: Google sign-in was closed or failed.");
+                  }
+                }}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl text-xs transition-all shadow-md shadow-blue-500/10 flex items-center justify-center gap-2.5 cursor-pointer transform font-sans hover:scale-[1.01] active:scale-98"
+                id="welcome-google-signin-btn"
+              >
+                <LogIn className="w-4 h-4 shrink-0" />
+                <span>Sign In / Log In with Google</span>
+              </button>
+              <p className="text-[9.5px] text-center text-slate-400 font-mono leading-none">
+                Seamless registration with standard Google secure auth.
+              </p>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#f4f6fc] flex text-slate-800 font-sans antialiased selection:bg-blue-600 selection:text-white" id="seo-workspace-studio-root">
       
@@ -496,8 +618,8 @@ broker lead generation pricing packages`;
               <TrendingUp className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-white tracking-tight leading-none font-sans">
-                KeywordIQ
+              <h1 className="text-sm font-bold text-white tracking-tight leading-none font-sans">
+                {APP_TITLE}
               </h1>
             </div>
           </div>
@@ -561,7 +683,7 @@ broker lead generation pricing packages`;
                       className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>Create New Client Studio</span>
+                      <span>Create New Client</span>
                     </button>
                   </div>
                 </div>
@@ -807,6 +929,28 @@ broker lead generation pricing packages`;
       {/* 2. MAIN DATA CANVAS - Fluid Crisp Light Layout matching the screenshot */}
       <main className="flex-1 flex flex-col min-h-screen overflow-y-auto" id="keywordiq-main-canvas">
         
+        {/* Shared Read-Only Workspace Banner */}
+        {!currentUser && sharedId && (
+          <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white font-sans text-xs px-6 py-3.5 shrink-0 flex items-center justify-between gap-4 shadow-md sticky top-0 z-50 border-b border-blue-600/20" id="shared-public-workspace-banner">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="flex h-2 w-2 relative shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-300 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-400 font-bold"></span>
+              </span>
+              <p className="font-semibold truncate leading-none">
+                You are viewing a shared {APP_TITLE} map in <strong className="font-extrabold text-blue-200">Read-Only Mode</strong>. Sign up to design and save your own SEO campaigns!
+              </p>
+            </div>
+            <button
+              onClick={signInWithGoogle}
+              className="bg-white hover:bg-slate-50 text-blue-700 font-extrabold px-3.5 py-1.5 rounded-lg text-[10px] transition-all shrink-0 flex items-center gap-1.5 shadow-md active:scale-97 cursor-pointer"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Secure Log In</span>
+            </button>
+          </div>
+        )}
+
         {/* Dynamic header path */}
         <header className="bg-white border-b border-slate-200/60 sticky top-0 z-10 px-8 py-4.5 flex items-center justify-between" id="canvas-header">
           <div>
@@ -850,6 +994,17 @@ broker lead generation pricing packages`;
               >
                 <Share2 className="w-3.5 h-3.5" />
                 <span>{copiedLink ? "Link Copied!" : "Share Map"}</span>
+              </button>
+            )}
+
+            {/* Add Client button */}
+            {activeWorkspace && (
+              <button
+                onClick={() => setShowNewWorkspaceModal(true)}
+                className="px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-3xs"
+              >
+                <Plus className="w-3.5 h-3.5 text-slate-500" />
+                <span>Add Client</span>
               </button>
             )}
           </div>
@@ -1345,7 +1500,7 @@ broker lead generation pricing packages`;
 
         {/* Crisp Humble Footer */}
         <footer className="bg-white border-t border-slate-200/60 px-8 py-4.5 text-center mt-auto text-[10px] text-slate-400 font-mono tracking-wide">
-          KeywordIQ Studio System • Powered by Google Gemini • Platform Port Ingress Secure
+          {APP_TITLE} Map System • Powered by Google Gemini • Cloud Workspace Secure
         </footer>
       </main>
 
@@ -1354,10 +1509,10 @@ broker lead generation pricing packages`;
         <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" id="new-workspace-modal">
           <div className="bg-white rounded-2xl border border-slate-100 shadow-2xl max-w-md w-full p-6 space-y-5 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-display font-bold text-slate-850 text-base">New Campaign Workspace</h3>
+              <h3 className="font-display font-bold text-slate-850 text-base">New Client Campaign</h3>
               <button
                 onClick={() => setShowNewWorkspaceModal(false)}
-                className="text-slate-450 hover:text-slate-805 text-sm font-semibold p-1"
+                className="text-slate-455 hover:text-slate-805 text-sm font-semibold p-1"
               >
                 ✕
               </button>
@@ -1365,12 +1520,12 @@ broker lead generation pricing packages`;
 
             <form onSubmit={handleCreateWorkspace} className="space-y-4">
               <div className="text-left">
-                <label className="text-xs font-bold text-slate-700 block mb-1">Workspace Theme Name</label>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Client or Campaign Name</label>
                 <input
                   type="text"
                   required
                   id="new-ws-name-input"
-                  placeholder="e.g., E-commerce Footwear Launch"
+                  placeholder="e.g., Proptech Realty"
                   value={newWorkspaceName}
                   onChange={(e) => setNewWorkspaceName(e.target.value)}
                   className="w-full text-xs p-3.5 bg-slate-50/50 border border-slate-205 text-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-550/10 focus:border-blue-500 placeholder:text-slate-400"
@@ -1404,7 +1559,7 @@ broker lead generation pricing packages`;
                   id="submit-new-ws-btn"
                   className="px-5 py-2.5 font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md cursor-pointer"
                 >
-                  Create Studio Workspace
+                  Create Client
                 </button>
               </div>
             </form>
