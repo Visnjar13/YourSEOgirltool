@@ -62,14 +62,14 @@ service cloud.firestore {
       allow create: if isVerified() 
         && isValidId(workspaceId) 
         && isValidWorkspace(incoming())
-        && incoming().createdAt == request.time
-        && incoming().updatedAt == request.time;
+        && incoming().createdAt is string && incoming().createdAt.size() <= 40
+        && incoming().updatedAt is string && incoming().updatedAt.size() <= 40;
 
       allow update: if isVerified() 
         && isWorkspaceCreator() 
         && isValidWorkspace(incoming())
         && incoming().createdAt == existing().createdAt
-        && incoming().updatedAt == request.time
+        && incoming().updatedAt is string && incoming().updatedAt.size() <= 40
         && incoming().createdBy == existing().createdBy // Creator is immutable
         && (
           // Whitelisting exact elements that are allowed to transition during edit/update
@@ -171,7 +171,7 @@ service cloud.firestore {
           && isValidId(templateId)
           && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid
           && isValidSEOTemplate(incoming())
-          && incoming().createdAt == request.time;
+          && incoming().createdAt is string && incoming().createdAt.size() <= 40;
 
         allow update: if isVerified()
           && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid
