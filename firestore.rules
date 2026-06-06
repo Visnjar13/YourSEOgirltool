@@ -16,11 +16,14 @@ service cloud.firestore {
     }
 
     function isVerified() {
-      return isSignedIn() && request.auth.token.email_verified == true;
+      return isSignedIn() && (
+        request.auth.token.get('email_verified', false) == true ||
+        request.auth.token.email_verified == true
+      );
     }
 
     function isValidId(id) {
-      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_-]+$');
     }
 
     function incoming() {
@@ -74,7 +77,7 @@ service cloud.firestore {
         && (
           // Whitelisting exact elements that are allowed to transition during edit/update
           incoming().diff(existing()).affectedKeys().hasOnly([
-            'name', 'description', 'isPublic', 'updatedAt', 'keywords', 'keywordClusters', 'contentClusters', 'templates'
+            'name', 'description', 'isPublic', 'updatedAt', 'keywords', 'keywordClusters', 'contentClusters', 'templates', 'pageMappings', 'actionPlanTasks', 'contentInventoryPages'
           ])
         );
 
