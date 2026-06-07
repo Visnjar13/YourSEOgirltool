@@ -75,7 +75,16 @@ export default function KeywordClustering({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           text: rawText,
-          clientProfile: workspace.clientProfile || null
+          clientProfile: workspace.clientProfile || null,
+          workspaceContext: {
+            clientProfile: workspace.clientProfile || {},
+            keywords: workspace.keywords || [],
+            clusters: workspace.keywordClusters || [],
+            pages: workspace.pageMappings || [],
+            competitors: workspace.clientProfile?.competitors || [],
+            contentInventory: workspace.contentInventoryPages || [],
+            actionPlan: workspace.actionPlanTasks || []
+          }
         }),
       });
 
@@ -424,6 +433,20 @@ grain-free kibble reviews"
                           {cluster.recommendedPagePath}
                         </span>
                       </div>
+                      
+                      {cluster.supportedServiceOrProduct && (
+                        <div className="col-span-2 bg-emerald-500/10 border border-emerald-500/15 p-2 rounded-xl text-emerald-300 mt-1">
+                          <span className="text-[9px] text-emerald-400 block font-semibold uppercase tracking-wider">Supports Service/Product Campaign</span>
+                          <span className="font-bold text-xs">🚀 {cluster.supportedServiceOrProduct}</span>
+                        </div>
+                      )}
+                      
+                      {cluster.isIrrelevantToBrand && (
+                        <div className="col-span-2 bg-rose-500/10 border border-rose-500/15 p-2 rounded-xl text-rose-400 mt-1">
+                          <span className="text-[9px] text-rose-450 block font-semibold uppercase tracking-wider">Brand Alignment Audit</span>
+                          <span className="font-bold text-xs">⚠️ Out of Scope / Irrelevant Target Niche</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 

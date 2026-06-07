@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { PageMappingItem, Workspace } from "../types";
-import { Trash2, Plus, Sparkles, Filter, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Trash2, Plus, Sparkles, Filter, ChevronLeft, ChevronRight, X, RefreshCw, GitMerge, ArrowRight, Link, Layers } from "lucide-react";
 
 interface PageMappingTabProps {
   workspace: Workspace;
@@ -14,6 +14,78 @@ export default function PageMappingTab({ workspace, onUpdateWorkspace, triggerAl
   const itemsPerPage = 15;
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [mappingLoading, setMappingLoading] = useState(false);
+
+  // AI Internal Linking & Silo Architect states (Step 4 & Future Internal Linking Tool)
+  const [linkingLoading, setLinkingLoading] = useState(false);
+  const [linkingBlueprint, setLinkingBlueprint] = useState<any[]>([]);
+  const [linkingOpen, setLinkingOpen] = useState(false);
+
+  const handleGenerateLinkingBlueprint = async () => {
+    setLinkingLoading(true);
+    try {
+      const response = await fetch("/api/gemini/content-cluster", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contentDescription: `Analyze our active mapped URL pages: ${rawMappings.map(m => `${m.title} (${m.pageType})`).join(", ")}. Plan 1-2 interlinked Pillar Silos with recommended anchor keywords and linking directions.`,
+          existingClusters: workspace.keywordClusters || [],
+          clientProfile: workspace.clientProfile || null,
+          workspaceContext: {
+            clientProfile: workspace.clientProfile || {},
+            keywords: workspace.keywords || [],
+            clusters: workspace.keywordClusters || [],
+            pages: workspace.pageMappings || [],
+            competitors: workspace.clientProfile?.competitors || [],
+            contentInventory: workspace.contentInventoryPages || [],
+            actionPlan: workspace.actionPlanTasks || []
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to design silo blueprint.");
+      }
+
+      const result = await response.json();
+      if (result && result.contentHubs) {
+        const list: any[] = [];
+        result.contentHubs.forEach((hub: any) => {
+          const pillarUrl = hub.pillarPage?.recommendedUrl || "/pillar-url";
+          const pillarTitle = hub.pillarPage?.title || "Pillar Page Theme";
+          
+          (hub.supportingArticles || []).forEach((art: any) => {
+            list.push({
+              sourceUrl: art.recommendedUrl || "/supporting-article",
+              sourceTitle: art.title || "Supporting Sub-item",
+              targetUrl: pillarUrl,
+              targetTitle: pillarTitle,
+              anchorText: art.targetKeyword || "Target anchor topic",
+              rule: art.roleInSilo || "Passes topical equity upward to parent pillar hub layout"
+            });
+            
+            list.push({
+              sourceUrl: pillarUrl,
+              sourceTitle: pillarTitle,
+              targetUrl: art.recommendedUrl || "/supporting-article",
+              targetTitle: art.title || "Supporting Sub-item",
+              anchorText: `learn more about ${art.title?.toLowerCase()}`,
+              rule: `Anchor reference pointing to comprehensive child node article`
+            });
+          });
+        });
+        setLinkingBlueprint(list);
+        setLinkingOpen(true);
+        triggerAlert("success", "Calculated comprehensive SEO Silo Link Interlink references!");
+      } else {
+        throw new Error("Invalid response format from content-cluster engine.");
+      }
+    } catch (err: any) {
+      triggerAlert("error", err.message || "Could not design silo links blueprint.");
+    } finally {
+      setLinkingLoading(false);
+    }
+  };
 
   // Modal / Inputs state for adding mapping
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -90,35 +162,54 @@ export default function PageMappingTab({ workspace, onUpdateWorkspace, triggerAl
 
   const totalPages = Math.max(1, Math.ceil(filteredMappings.length / itemsPerPage));
 
-  // Programmatic generation trigger faking
+  // Programmatic generation calling real AI Endpoint
   const handleGenerateFromClusters = async () => {
     if ((workspace.keywordClusters || []).length === 0) {
       triggerAlert("error", "No clusters found in this workspace to map. Run the AI Strategy Engine or import CSV clusters first!");
       return;
     }
 
-    triggerAlert("success", "Synthesizing SEO Page Mappings from keyword clusters...");
+    triggerAlert("success", "Analyzing keyword clusters against client profile & content inventory to prevent search cannibalization...");
+    setMappingLoading(true);
 
-    const generated: PageMappingItem[] = (workspace.keywordClusters || []).map((cluster, index) => {
-      const isEasy = (index % 3) === 0;
-      const isMed = (index % 3) === 1;
-      const scoreVal = cluster.score || 25;
+    try {
+      const response = await fetch("/api/gemini/generate-page-mappings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientProfile: workspace.clientProfile || null,
+          workspaceContext: {
+            clientProfile: workspace.clientProfile || {},
+            keywords: workspace.keywords || [],
+            clusters: workspace.keywordClusters || [],
+            pages: workspace.pageMappings || [],
+            competitors: workspace.clientProfile?.competitors || [],
+            contentInventory: workspace.contentInventoryPages || [],
+            actionPlan: workspace.actionPlanTasks || []
+          }
+        })
+      });
 
-      return {
-        id: `map-gen-${cluster.clusterName}-${index}`,
-        title: cluster.clusterName,
-        clusterName: cluster.clusterName,
-        action: cluster.intent === "Transactional" || cluster.intent === "Commercial" ? "Create" : "Optimise",
-        pageType: cluster.type === "Service Pages" ? "Service Page" : cluster.type === "Comparison Pages" ? "Comparison Page" : cluster.type === "Location Pages" ? "Location Page" : "Blog Post",
-        difficulty: scoreVal,
-        priority: scoreVal > 60 ? "High" : scoreVal > 30 ? "Medium" : "Low",
-        status: "Planned",
-        reason: `Generated from keyword cluster '${cluster.clusterName}' representing intent ${cluster.intent || "Informational"}.`
-      };
-    });
+      if (!response.ok) {
+        throw new Error("Failed to map pages using AI SEO logic.");
+      }
 
-    await onUpdateWorkspace({ pageMappings: [...rawMappings, ...generated] });
-    triggerAlert("success", `Aligned ${generated.length} keyword clusters with your active URL page maps!`);
+      const result = await response.json();
+      if (result && result.pageMappings) {
+        // Prevent duplicate IDs or overwriting manually created mappings
+        const existingIds = new Set(rawMappings.map(m => m.id));
+        const filteredNew = result.pageMappings.filter((m: any) => !existingIds.has(m.id));
+
+        await onUpdateWorkspace({ pageMappings: [...filteredNew, ...rawMappings] });
+        triggerAlert("success", `Aligned and mapped ${filteredNew.length} clusters with your URL structure without cannibalization!`);
+      } else {
+        throw new Error("Invalid mapping data structure parsed.");
+      }
+    } catch (err: any) {
+      triggerAlert("error", err.message || "Could not synthesize page mappings.");
+    } finally {
+      setMappingLoading(false);
+    }
   };
 
   // Add mapping submit
@@ -177,10 +268,20 @@ export default function PageMappingTab({ workspace, onUpdateWorkspace, triggerAl
 
           <button
             onClick={handleGenerateFromClusters}
-            className="px-4 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-705 border border-slate-200 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-2xs"
+            disabled={mappingLoading || (workspace.keywordClusters || []).length === 0}
+            className="px-4 py-2.5 bg-slate-50 hover:bg-slate-100 disabled:opacity-50 text-slate-705 border border-slate-200 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-2xs"
           >
-            <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-            <span>Generate from Clusters</span>
+            {mappingLoading ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-500" />
+                <span>Mapping Pages...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+                <span>Generate from Clusters</span>
+              </>
+            )}
           </button>
 
           <button
@@ -516,6 +617,91 @@ export default function PageMappingTab({ workspace, onUpdateWorkspace, triggerAl
           </div>
         </div>
       )}
+
+      {/* -------------------- FUTURE INTERNAL LINKING TOOL -------------------- */}
+      <div className="bg-white border border-slate-200/80 p-6.5 rounded-2xl shadow-2xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3.5 border-b border-rose-50/10">
+          <div className="space-y-1 text-left">
+            <h4 className="font-display font-black text-slate-800 text-sm flex items-center gap-2">
+              <GitMerge className="w-4.5 h-4.5 text-indigo-600" />
+              AI Silo Internal Linking Architect
+            </h4>
+            <p className="text-[11px] text-slate-500">
+              Run real-time graph parsing across your mapped targets and content inventory to find semantic topical silo linking recommendations.
+            </p>
+          </div>
+
+          <button
+            onClick={handleGenerateLinkingBlueprint}
+            disabled={linkingLoading || rawMappings.length === 0}
+            className="px-4.5 py-2.5 bg-[#4f46e5]/10 hover:bg-[#4f46e5]/15 disabled:opacity-40 text-[#4f46e5] rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer active:scale-98 border border-[#4f46e5]/20"
+          >
+            {linkingLoading ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <span>Designing Silos...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Calculate Silo Link Directions</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {linkingOpen && linkingBlueprint.length > 0 ? (
+          <div className="space-y-4 animate-fadeIn">
+            <div className="overflow-x-auto border border-slate-100 rounded-xl">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-100 text-[10px] uppercase font-mono tracking-wider font-extrabold text-slate-400">
+                    <th className="p-3 pl-4">Source Page (Place Link Here)</th>
+                    <th className="p-3">Linking Direction</th>
+                    <th className="p-3">Destination Page (Target Element)</th>
+                    <th className="p-3">Recommended Anchor Text</th>
+                    <th className="p-3 pr-4">Silo Equity Rationale</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-xs text-left">
+                  {linkingBlueprint.map((item, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50/45 transition-colors">
+                      <td className="p-3 pl-4">
+                        <div className="font-bold text-slate-800 text-left">{item.sourceTitle}</div>
+                        <div className="text-[10px] font-mono text-slate-450 text-left">{item.sourceUrl}</div>
+                      </td>
+                      <td className="p-3">
+                        <div className="inline-flex items-center gap-1.5 text-indigo-600 bg-indigo-50 border border-indigo-100/60 px-2 py-0.5 rounded font-mono text-[9px] font-extrabold uppercase">
+                          <span>Link to</span>
+                          <ArrowRight className="w-2.5 h-2.5" />
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="font-bold text-slate-800 text-left">{item.targetTitle}</div>
+                        <div className="text-[10px] font-mono text-slate-450 text-left">{item.targetUrl}</div>
+                      </td>
+                      <td className="p-3 py-4 text-left">
+                        <span className="font-mono font-bold text-indigo-700 bg-indigo-50/40 border border-indigo-100/45 rounded px-2.5 py-1">
+                          "{item.anchorText}"
+                        </span>
+                      </td>
+                      <td className="p-3 text-[11px] text-slate-500 leading-normal max-w-xs text-left">
+                        {item.rule}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          rawMappings.length === 0 && (
+            <div className="py-6 text-center text-xs text-slate-450 font-bold bg-slate-50 border border-slate-100 rounded-xl">
+              Add page mappings above before mapping linking nodes.
+            </div>
+          )
+        )}
+      </div>
 
     </div>
   );

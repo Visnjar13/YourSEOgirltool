@@ -9,6 +9,18 @@ export interface KeywordItem {
   rankingUrl?: string;
   pos?: string | number;
   clusterName?: string;
+  // Step 6 added:
+  funnelStage?: "TOFU" | "MOFU" | "BOFU" | string;
+  businessRelevance?: "High" | "Medium" | "Low" | string;
+  priorityScore?: number;
+  strategicMatchReason?: string;
+  isRelevant?: boolean;
+  relevanceExplanation?: string;
+  isRealistic?: boolean;
+  feasibilityAnalysis?: string;
+  countryMatch?: string;
+  playType?: string;
+  strategicAdvice?: string;
 }
 
 export interface KeywordCluster {
@@ -23,6 +35,8 @@ export interface KeywordCluster {
   type?: "Service Pages" | "Blog & Guides" | "Comparison Pages" | "Location Pages";
   parentTopic?: string;
   primaryKeyword?: string;
+  supportedServiceOrProduct?: string;
+  isIrrelevantToBrand?: boolean;
   confidenceScore?: "High" | "Medium" | "Low";
   opportunityPriority?: "High" | "Medium" | "Low";
   priorityReason?: string;

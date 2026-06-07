@@ -37,7 +37,16 @@ export default function ContentClustering({ workspace, onUpdateWorkspace }: Cont
         body: JSON.stringify({
           contentDescription: finalInput,
           existingClusters: workspace.keywordClusters || [],
-          clientProfile: workspace.clientProfile || null
+          clientProfile: workspace.clientProfile || null,
+          workspaceContext: {
+            clientProfile: workspace.clientProfile || {},
+            keywords: workspace.keywords || [],
+            clusters: workspace.keywordClusters || [],
+            pages: workspace.pageMappings || [],
+            competitors: workspace.clientProfile?.competitors || [],
+            contentInventory: workspace.contentInventoryPages || [],
+            actionPlan: workspace.actionPlanTasks || []
+          }
         }),
       });
 

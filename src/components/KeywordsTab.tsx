@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { KeywordItem, KeywordIntent, Workspace } from "../types";
-import { Search, Plus, Upload, Trash2, ArrowUpDown, HelpCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Plus, Upload, Trash2, ArrowUpDown, HelpCircle, ChevronLeft, ChevronRight, Sparkles, RefreshCw, Layers } from "lucide-react";
 
 interface KeywordsTabProps {
   workspace: Workspace;
@@ -14,6 +14,168 @@ export default function KeywordsTab({ workspace, onUpdateWorkspace, triggerAlert
   const [activeIntentTab, setActiveIntentTab] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
+
+  // AI Context Keyword Suggestions State
+  const [aiSuggestions, setAiSuggestions] = useState<any[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [isAiOpen, setIsAiOpen] = useState(false);
+
+  const fetchAiSuggestions = async () => {
+    setAiLoading(true);
+    try {
+      const response = await fetch("/api/gemini/template", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "suggest_keywords",
+          params: {},
+          clientProfile: workspace.clientProfile || null,
+          workspaceContext: {
+            clientProfile: workspace.clientProfile || {},
+            keywords: workspace.keywords || [],
+            clusters: workspace.keywordClusters || [],
+            pages: workspace.pageMappings || [],
+            competitors: workspace.clientProfile?.competitors || [],
+            contentInventory: workspace.contentInventoryPages || [],
+            actionPlan: workspace.actionPlanTasks || []
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to consult AI Brain.");
+      }
+
+      const result = await response.json();
+      if (result && result.data && result.data.list) {
+        setAiSuggestions(result.data.list);
+        setIsAiOpen(true);
+        triggerAlert("success", "AI Brain analyzed workspace context and provided 15 commercial search opportunities!");
+      } else {
+        throw new Error("Invalid structure returned");
+      }
+    } catch (err: any) {
+      triggerAlert("error", err.message || "An unexpected error occurred during AI consultation.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleAddAiKeyword = async (item: any) => {
+    const exists = (workspace.keywords || []).some(k => k.keyword.toLowerCase() === item.keyword.toLowerCase());
+    if (exists) {
+      triggerAlert("error", `"${item.keyword}" is already mapped in this workspace.`);
+      return;
+    }
+
+    const newItem: KeywordItem = {
+      keyword: item.keyword,
+      intent: item.intent || "Commercial",
+      volume: item.volume || 100,
+      difficulty: item.difficulty || 20,
+      cpc: item.cpc || 0,
+      rankingUrl: "—",
+      pos: "—"
+    };
+
+    const updated = [newItem, ...(workspace.keywords || [])];
+    await onUpdateWorkspace({ keywords: updated });
+    triggerAlert("success", `Added keyword "${item.keyword}" successfully!`);
+  };
+
+  const handleAddAllAiKeywords = async () => {
+    const existingList = workspace.keywords || [];
+    const keywordsToAdd: KeywordItem[] = [];
+
+    aiSuggestions.forEach(item => {
+      const exists = existingList.some(k => k.keyword.toLowerCase() === item.keyword.toLowerCase());
+      if (!exists) {
+        keywordsToAdd.push({
+          keyword: item.keyword,
+          intent: item.intent || "Commercial",
+          volume: item.volume || 100,
+          difficulty: item.difficulty || 20,
+          cpc: item.cpc || 0,
+          rankingUrl: "—",
+          pos: "—"
+        });
+      }
+    });
+
+    if (keywordsToAdd.length === 0) {
+      triggerAlert("error", "All suggested queries are already inside active campaign targets!");
+      return;
+    }
+
+    const updated = [...keywordsToAdd, ...existingList];
+    await onUpdateWorkspace({ keywords: updated });
+    triggerAlert("success", `Bulk imported ${keywordsToAdd.length} high-conversion search objectives!`);
+    setAiSuggestions([]);
+    setIsAiOpen(false);
+  };
+
+  const [classifyingLoading, setClassifyingLoading] = useState(false);
+
+  const handleRunStrategicAudit = async () => {
+    const list = workspace.keywords || [];
+    if (list.length === 0) {
+      triggerAlert("error", "No keywords found in active workspace to audit. Try uploading keywords first or enriching the list.");
+      return;
+    }
+
+    setClassifyingLoading(true);
+    try {
+      const response = await fetch("/api/gemini/classify-keywords", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          keywords: list,
+          clientProfile: workspace.clientProfile || null,
+          workspaceContext: {
+            clientProfile: workspace.clientProfile || {},
+            keywords: list,
+            clusters: workspace.keywordClusters || [],
+            pages: workspace.pageMappings || [],
+            competitors: workspace.clientProfile?.competitors || [],
+            contentInventory: workspace.contentInventoryPages || [],
+            actionPlan: workspace.actionPlanTasks || []
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to align keywords with your Client Profile.");
+      }
+
+      const result = await response.json();
+      if (result && result.classifications) {
+        // Merge classification back into existing keyword objects
+        const updatedKeywords = list.map(k => {
+          const match = result.classifications.find((c: any) => c.keyword.toLowerCase() === k.keyword.toLowerCase());
+          if (match) {
+            return {
+              ...k,
+              intent: match.intent || k.intent,
+              funnelStage: match.funnelStage || "TOFU",
+              businessRelevance: match.businessRelevance || "Medium",
+              priorityScore: match.priorityScore || 50,
+              strategicMatchReason: match.strategicMatchReason || ""
+            };
+          }
+          return k;
+        });
+
+        await onUpdateWorkspace({ keywords: updatedKeywords });
+        triggerAlert("success", "Calculated custom Funnel Stage, Business Relevance, and Priority scores based on client priority services!");
+      } else {
+        throw new Error("Invalid classification payload format.");
+      }
+    } catch (err: any) {
+      triggerAlert("error", err.message || "Strategic classification process failed.");
+    } finally {
+      setClassifyingLoading(false);
+    }
+  };
 
   // Modal State for Add Keyword
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -206,6 +368,96 @@ export default function KeywordsTab({ workspace, onUpdateWorkspace, triggerAlert
 
   return (
     <div className="space-y-6" id="keywords-tab-module">
+      
+      {/* AI Strategy Brain Suggestions Section */}
+      <div className="bg-gradient-to-br from-indigo-900 via-[#1e1b4b] to-slate-900 border border-indigo-500/30 p-5 rounded-2xl text-white space-y-4 shadow-md">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h4 className="text-sm font-black text-white flex items-center gap-2 font-display">
+              <Sparkles className="w-4.5 h-4.5 text-amber-400 fill-amber-300/10 animate-pulse" />
+              Strategic Search Query Consultant
+            </h4>
+            <p className="text-[11.5px] text-indigo-200/85">
+              Consult the AI Strategy Brain to list 15 tailored commercial and transactional search objectives mapping exactly to your client goals.
+            </p>
+          </div>
+
+          <button
+            onClick={fetchAiSuggestions}
+            disabled={aiLoading}
+            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-45 rounded-xl text-xs font-bold transition-transform hover:scale-102 cursor-pointer flex items-center gap-2 select-none border border-blue-400/20 active:scale-98 shrink-0"
+          >
+            {aiLoading ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <span>Consulting Strategy...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <span>Enrich Keywords List</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {isAiOpen && aiSuggestions.length > 0 && (
+          <div className="border-t border-indigo-500/20 pt-4 space-y-4 animate-fadeIn">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase font-mono tracking-wider font-extrabold text-indigo-350">
+                AI CONTEXT SUGGESTIONS PROMPTED FOR THIS CLIENT
+              </span>
+              <button
+                onClick={handleAddAllAiKeywords}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+              >
+                + Add All 15 Strategic Targets
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+              {aiSuggestions.map((item, idx) => {
+                const alreadyAdded = (workspace.keywords || []).some(k => k.keyword.toLowerCase() === item.keyword.toLowerCase());
+
+                return (
+                  <div key={idx} className="p-3 bg-slate-930/80 border border-slate-800 rounded-xl flex items-center justify-between gap-3 hover:border-indigo-500/20 transition-all">
+                    <div className="space-y-1 min-w-0">
+                      <span className="text-xs font-bold text-white block truncate">
+                        {item.keyword}
+                      </span>
+                      <div className="flex items-center gap-2 flex-wrap text-[10px] font-mono text-slate-400">
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                          item.intent === "Commercial" || item.intent === "Transactional" ? "bg-amber-500/10 text-amber-400" : "bg-blue-500/10 text-sky-400"
+                        }`}>
+                          {item.intent}
+                        </span>
+                        <span>Vol: {item.volume}</span>
+                        <span>KD: {item.difficulty}</span>
+                        <span className="text-indigo-300 truncate" title={item.rationale}>
+                          {item.rationale || "Direct strategy match"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleAddAiKeyword(item)}
+                      disabled={alreadyAdded}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                        alreadyAdded
+                          ? "bg-slate-800 text-slate-500 cursor-not-allowed border border-transparent"
+                          : "bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-500/20"
+                      }`}
+                    >
+                      {alreadyAdded ? "Added" : "+ Add"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Search and Filters Strip */}
       <div className="bg-white border border-slate-200/70 p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Search */}
@@ -255,6 +507,25 @@ export default function KeywordsTab({ workspace, onUpdateWorkspace, triggerAlert
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Keyword</span>
+          </button>
+
+          {/* Perform AI Strategic Audit */}
+          <button
+            onClick={handleRunStrategicAudit}
+            disabled={classifyingLoading || (workspace.keywords || []).length === 0}
+            className="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-45 text-white rounded-xl text-xs font-bold transition-all shadow-sm shadow-indigo-500/10 flex items-center gap-2 cursor-pointer active:scale-98"
+          >
+            {classifyingLoading ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <span>Auditing Funnel...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>AI Strategic Audit</span>
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -367,6 +638,24 @@ export default function KeywordsTab({ workspace, onUpdateWorkspace, triggerAlert
                     <ArrowUpDown className="w-3 h-3 text-slate-400" />
                   </div>
                 </th>
+                <th className="p-4 text-center cursor-pointer hover:bg-slate-100/50 transition-colors" onClick={() => handleSort("funnelStage")}>
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span>Funnel</span>
+                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  </div>
+                </th>
+                <th className="p-4 text-center cursor-pointer hover:bg-slate-100/50 transition-colors" onClick={() => handleSort("businessRelevance")}>
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span>Relevance</span>
+                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  </div>
+                </th>
+                <th className="p-4 text-center cursor-pointer hover:bg-slate-100/50 transition-colors" onClick={() => handleSort("priorityScore")}>
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span>Priority</span>
+                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  </div>
+                </th>
                 <th className="p-4">Ranking URL</th>
                 <th className="p-4 text-center">Pos.</th>
                 <th className="p-4 pr-6 text-right">Delete</th>
@@ -379,7 +668,14 @@ export default function KeywordsTab({ workspace, onUpdateWorkspace, triggerAlert
                     <td className="p-4 pl-6">
                       <input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" defaultChecked />
                     </td>
-                    <td className="p-4 font-bold text-slate-800 font-sans">{kw.keyword}</td>
+                    <td className="p-4">
+                      <div className="font-bold text-slate-800 font-sans text-left">{kw.keyword}</div>
+                      {kw.strategicMatchReason && (
+                        <div className="text-[10px] text-indigo-600 bg-indigo-50/55 p-1 px-1.5 rounded italic font-medium mt-1 inline-block max-w-[280px] truncate text-left" title={kw.strategicMatchReason}>
+                          💡 {kw.strategicMatchReason}
+                        </div>
+                      )}
+                    </td>
                     <td className="p-4">
                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
                         kw.intent === "Informational" ? "bg-blue-50 text-blue-600 border border-blue-100" :
@@ -395,6 +691,44 @@ export default function KeywordsTab({ workspace, onUpdateWorkspace, triggerAlert
                     <td className="p-4 text-center">{renderKD(kw.difficulty)}</td>
                     <td className="p-4 text-right font-mono text-slate-500">
                       {kw.cpc && kw.cpc > 0 ? `$${kw.cpc.toFixed(2)}` : "—"}
+                    </td>
+                    <td className="p-4 text-center font-bold">
+                      {kw.funnelStage ? (
+                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase tracking-wide font-extrabold ${
+                          kw.funnelStage === "BOFU" ? "bg-rose-55 text-rose-600 border border-rose-100" :
+                          kw.funnelStage === "MOFU" ? "bg-indigo-55 text-indigo-600 border border-indigo-100" :
+                          "bg-slate-100 text-slate-550 border border-slate-200"
+                        }`}>
+                          {kw.funnelStage}
+                        </span>
+                      ) : (
+                        <span className="text-slate-350 font-normal">—</span>
+                      )}
+                    </td>
+                    <td className="p-4 text-center">
+                      {kw.businessRelevance ? (
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          kw.businessRelevance === "High" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" :
+                          kw.businessRelevance === "Medium" ? "bg-amber-50 text-amber-600 border border-amber-100" :
+                          "bg-slate-50 text-slate-500 border border-slate-150"
+                        }`}>
+                          {kw.businessRelevance}
+                        </span>
+                      ) : (
+                        <span className="text-slate-350 font-normal">—</span>
+                      )}
+                    </td>
+                    <td className="p-4 text-center font-mono">
+                      {kw.priorityScore !== undefined ? (
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className="font-extrabold text-slate-850">{kw.priorityScore}</span>
+                          <div className="w-12 bg-slate-100 rounded-full h-1 overflow-hidden">
+                            <div className="bg-indigo-600 h-full rounded-full" style={{ width: `${kw.priorityScore}%` }}></div>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-slate-350 font-normal">—</span>
+                      )}
                     </td>
                     <td className="p-4 text-slate-400 font-mono text-[11px] truncate max-w-xs">{kw.rankingUrl || "—"}</td>
                     <td className="p-4 text-center text-slate-400 font-mono">{kw.pos || "—"}</td>

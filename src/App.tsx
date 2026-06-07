@@ -12,6 +12,7 @@ import SerpAnalysisTab from "./components/SerpAnalysisTab";
 import PageMappingTab from "./components/PageMappingTab";
 import ActionPlanTab from "./components/ActionPlanTab";
 import ContentInventoryTab from "./components/ContentInventoryTab";
+import WorkspaceBrainInfo from "./components/WorkspaceBrainInfo";
 
 import { generateSeedWorkspace } from "./utils/seedData";
 
@@ -524,7 +525,17 @@ broker lead generation pricing packages`;
         body: JSON.stringify({ 
           text: rawText, 
           keywordsList: rawText ? undefined : keywordsToCluster,
-          existingPages: activeWorkspace.contentInventoryPages || []
+          existingPages: activeWorkspace.contentInventoryPages || [],
+          clientProfile: activeWorkspace.clientProfile || {},
+          workspaceContext: {
+            clientProfile: activeWorkspace.clientProfile || {},
+            keywords: activeWorkspace.keywords || [],
+            clusters: activeWorkspace.keywordClusters || [],
+            pages: activeWorkspace.pageMappings || [],
+            competitors: activeWorkspace.clientProfile?.competitors || [],
+            contentInventory: activeWorkspace.contentInventoryPages || [],
+            actionPlan: activeWorkspace.actionPlanTasks || []
+          }
         }),
       });
 
@@ -1156,6 +1167,9 @@ broker lead generation pricing packages`;
             </div>
           ) : activeWorkspace ? (
             <div className="space-y-8">
+              
+              {/* Strategy Brain workspaceContext Overview (Steps 3 & 4) */}
+              <WorkspaceBrainInfo workspace={activeWorkspace} />
               
               {/* -------------------- 2A. TAB VIEW: DASHBOARD (Mockup Layout) -------------------- */}
               {activeTab === "dashboard" && (

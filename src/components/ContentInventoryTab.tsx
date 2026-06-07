@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { ContentInventoryPage, Workspace } from "../types";
-import { Search, Plus, Upload, Trash2, Globe, ExternalLink, Calendar, HelpCircle, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Plus, Upload, Trash2, Globe, ExternalLink, Calendar, HelpCircle, X, ChevronLeft, ChevronRight, Sparkles, RefreshCw, AlertTriangle } from "lucide-react";
 
 interface ContentInventoryTabProps {
   workspace: Workspace;
@@ -19,6 +19,11 @@ export default function ContentInventoryTab({ workspace, onUpdateWorkspace, trig
   const [newTitle, setNewTitle] = useState("");
   const [newType, setNewType] = useState("Blog Post");
   const [newStatus, setNewStatus] = useState("Active");
+
+  // AI Content Gap States (Step 6 / Flag missing targets)
+  const [gapLoading, setGapLoading] = useState(false);
+  const [gapResults, setGapResults] = useState<any[]>([]);
+  const [gapTriggered, setGapTriggered] = useState(false);
 
   const rawPages = workspace.contentInventoryPages || [];
 
@@ -84,6 +89,53 @@ export default function ContentInventoryTab({ workspace, onUpdateWorkspace, trig
       await onUpdateWorkspace({ contentInventoryPages: [...mockBulk, ...rawPages] });
       triggerAlert("success", "Discovered 3 new active URLs inside sitemap crawler!");
     }, 1200);
+  };
+
+  // AI Content Gap Audit
+  const handleRunGapAnalysis = async () => {
+    if ((workspace.keywordClusters || []).length === 0) {
+      triggerAlert("error", "No clusters found in this workspace to compare. Run the AI Strategy Engine or map clusters first!");
+      return;
+    }
+
+    triggerAlert("success", "Running comprehensive Content Gap Audit against active keyword clusters...");
+    setGapLoading(true);
+
+    try {
+      const response = await fetch("/api/gemini/run-gap-analysis", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientProfile: workspace.clientProfile || null,
+          workspaceContext: {
+            clientProfile: workspace.clientProfile || {},
+            keywords: workspace.keywords || [],
+            clusters: workspace.keywordClusters || [],
+            pages: workspace.pageMappings || [],
+            competitors: workspace.clientProfile?.competitors || [],
+            contentInventory: workspace.contentInventoryPages || [],
+            actionPlan: workspace.actionPlanTasks || []
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to calculate content gaps.");
+      }
+
+      const result = await response.json();
+      if (result && result.gapAnalysis) {
+        setGapResults(result.gapAnalysis);
+        setGapTriggered(true);
+        triggerAlert("success", `Identified ${result.gapAnalysis.length} critical content gap opportunities!`);
+      } else {
+        throw new Error("Invalid output format parsed.");
+      }
+    } catch (err: any) {
+      triggerAlert("error", err.message || "Could not analyze content gaps.");
+    } finally {
+      setGapLoading(false);
+    }
   };
 
   // Filter lists based on search
@@ -358,6 +410,98 @@ export default function ContentInventoryTab({ workspace, onUpdateWorkspace, trig
           </div>
         </div>
       )}
+
+      {/* AI Content Gap Audit Section (Step 6 requirement) */}
+      <div className="bg-white border border-slate-200/85 p-6 rounded-2xl shadow-2xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3.5 border-b border-slate-100">
+          <div className="space-y-1 text-left">
+            <h4 className="font-display font-black text-slate-800 text-sm flex items-center gap-2">
+              <AlertTriangle className="w-4.5 h-4.5 text-amber-500" />
+              AI SEO Content Gap & Overlap Audit
+            </h4>
+            <p className="text-[11px] text-slate-500">
+              Correlate your active sitemap/inventory database with designated target clusters to extract conversion gaps and protect rankings.
+            </p>
+          </div>
+
+          <button
+            onClick={handleRunGapAnalysis}
+            disabled={gapLoading || (workspace.keywordClusters || []).length === 0}
+            className="px-4.5 py-2.5 bg-amber-50 hover:bg-amber-100/70 disabled:opacity-45 text-amber-800 border border-amber-200/60 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer active:scale-98"
+          >
+            {gapLoading ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-600" />
+                <span>Auditing Sitemap...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+                <span>Run AI Gap Analysis</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {gapTriggered && (
+          <div className="space-y-3.5 animate-fadeIn">
+            {gapResults.length > 0 ? (
+              <div className="overflow-x-auto border border-slate-100 rounded-xl">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-150 text-[10px] uppercase font-mono tracking-wider font-extrabold text-slate-400">
+                      <th className="p-3 pl-4">Missing Theme / Target</th>
+                      <th className="p-3">Target Keyword Group</th>
+                      <th className="p-3">Relevance</th>
+                      <th className="p-3">Suggested Page Type</th>
+                      <th className="p-3 pr-4">Strategic Miss Explanation / Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs text-left">
+                    {gapResults.map((gap, idx) => (
+                      <tr key={idx} className="hover:bg-amber-50/10 transition-colors">
+                        <td className="p-3 pl-4 font-bold text-slate-800 max-w-[190px] truncate" title={gap.gapTheme}>
+                          {gap.gapTheme}
+                        </td>
+                        <td className="p-3 font-semibold text-slate-550">
+                          {gap.keywordGroup}
+                        </td>
+                        <td className="p-3">
+                          <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
+                            gap.relevance === "High" ? "bg-red-50 text-red-700 border border-red-100" :
+                            gap.relevance === "Medium" ? "bg-amber-50 text-amber-700 border border-amber-100" :
+                            "bg-slate-50 text-slate-600"
+                          }`}>
+                            {gap.relevance} ({gap.priorityScore})
+                          </span>
+                        </td>
+                        <td className="p-3 font-semibold">
+                          <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-mono">
+                            {gap.pageType}
+                          </span>
+                        </td>
+                        <td className="p-3 py-3.5 max-w-sm">
+                          <div className="text-slate-800 font-medium leading-relaxed mb-1 text-[11px]">
+                            {gap.strategicMissRationale}
+                          </div>
+                          <div className="text-blue-700 bg-blue-50/50 border border-blue-100/50 rounded-lg p-2 font-semibold text-[10px] flex items-start gap-1">
+                            <span className="shrink-0">➜</span>
+                            <span>{gap.actionPlanAdvice}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="py-6 text-center text-xs text-emerald-700 bg-emerald-50/50 border border-emerald-100 rounded-xl font-bold">
+                ✓ Superb! All loaded keyword clusters have matched mapping nodes in active pages. No cannibalization or gaps found!
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
     </div>
   );
