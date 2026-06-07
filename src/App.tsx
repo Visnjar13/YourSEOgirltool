@@ -312,6 +312,27 @@ export default function App() {
     setTimeout(() => setAlert(null), 5000);
   };
 
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+      triggerAlert("success", "Successfully authenticated to your cloud workspace!");
+    } catch (err: any) {
+      console.error("Auth error:", err);
+      let msg = "Google sign-in was closed or failed.";
+      if (err && err.code) {
+        msg += ` (Error code: ${err.code})`;
+        if (err.code === "auth/unauthorized-domain") {
+          msg = "This domain (app.yourseogirl.com) is not authorized in your Firebase console. Go to Firebase Console > Authentication > Settings > Authorized Domains and add 'app.yourseogirl.com' to allow logins on this domain.";
+        } else if (err.code === "auth/popup-blocked") {
+          msg = "The authentication popup was blocked by your browser settings. Please enable popups for this site.";
+        }
+      } else if (err && err.message) {
+        msg += ` (${err.message})`;
+      }
+      triggerAlert("error", `Secure Authentication paused: ${msg}`);
+    }
+  };
+
   const handleCreateWorkspace = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newWorkspaceName.trim()) return;
@@ -712,14 +733,7 @@ broker lead generation pricing packages`;
             {/* CTA action wrapper */}
             <div className="pt-4 border-t border-slate-100 space-y-3">
               <button
-                onClick={async () => {
-                  try {
-                    await signInWithGoogle();
-                    triggerAlert("success", "Successfully authenticated to your cloud workspace!");
-                  } catch (err) {
-                    triggerAlert("error", "Secure Authentication paused: Google sign-in was closed or failed.");
-                  }
-                }}
+                onClick={handleGoogleSignIn}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl text-xs transition-all shadow-md shadow-blue-500/10 flex items-center justify-center gap-2.5 cursor-pointer transform font-sans hover:scale-[1.01] active:scale-98"
                 id="welcome-google-signin-btn"
               >
@@ -1062,7 +1076,7 @@ broker lead generation pricing packages`;
               </p>
               <button
                 id="google-sign-in-btn-sidebar"
-                onClick={signInWithGoogle}
+                onClick={handleGoogleSignIn}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer border border-blue-550/20 active:scale-98"
               >
                 <LogIn className="w-3.5 h-3.5" />
@@ -1089,7 +1103,7 @@ broker lead generation pricing packages`;
               </p>
             </div>
             <button
-              onClick={signInWithGoogle}
+              onClick={handleGoogleSignIn}
               className="bg-white hover:bg-slate-50 text-blue-700 font-extrabold px-3.5 py-1.5 rounded-lg text-[10px] transition-all shrink-0 flex items-center gap-1.5 shadow-md active:scale-97 cursor-pointer"
             >
               <LogIn className="w-3.5 h-3.5" />
