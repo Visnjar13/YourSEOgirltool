@@ -12,9 +12,33 @@
         "creatorEmail": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" },
-        "isPublic": { "type": "boolean", "description": "Whether others can view this workspace via shared link" }
+        "isPublic": { "type": "boolean", "description": "Whether others can view this workspace via shared link" },
+        "clientProfile": { "$ref": "#/entities/ClientProfile" }
       },
       "required": ["id", "name", "createdBy", "createdAt", "updatedAt"]
+    },
+    "ClientProfile": {
+      "title": "Client Strategic Profile",
+      "description": "Strategic context for SEO planning.",
+      "type": "object",
+      "properties": {
+        "businessName": { "type": "string" },
+        "websiteUrl": { "type": "string" },
+        "description": { "type": "string" },
+        "industry": { "type": "string" },
+        "targetCountry": { "type": "string" },
+        "targetAudience": { "type": "string" },
+        "goals": { "type": "array" },
+        "productsServices": { "type": "array" },
+        "priorityServices": { "type": "array" },
+        "competitors": { "type": "array" },
+        "existingPages": { "type": "array" },
+        "sitemapUrl": { "type": "string" },
+        "preferredPageTypes": { "type": "array" },
+        "publishingCapacity": { "type": "string" },
+        "existingSeoData": { "type": "array" },
+        "notes": { "type": "string" }
+      }
     },
     "KeywordItem": {
       "title": "Keyword Item",

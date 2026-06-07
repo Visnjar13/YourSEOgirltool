@@ -36,7 +36,8 @@ export default function ContentClustering({ workspace, onUpdateWorkspace }: Cont
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contentDescription: finalInput,
-          existingClusters: workspace.keywordClusters || []
+          existingClusters: workspace.keywordClusters || [],
+          clientProfile: workspace.clientProfile || null
         }),
       });
 

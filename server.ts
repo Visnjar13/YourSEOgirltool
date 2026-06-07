@@ -45,6 +45,38 @@ function getGeminiClient(): GoogleGenAI {
   return aiClient;
 }
 
+function formatClientProfileContext(clientProfile: any): string {
+  if (!clientProfile || typeof clientProfile !== 'object') return "";
+  
+  const getValue = (val: any) => {
+    if (!val) return "Not specified";
+    if (Array.isArray(val)) return val.length > 0 ? val.join(", ") : "Not specified";
+    return String(val);
+  };
+
+  return `
+=== CLIENT BRAND & SEO STRATEGY CONTEXT ===
+- Business Name: ${getValue(clientProfile.businessName)}
+- Website URL: ${getValue(clientProfile.websiteUrl)}
+- Business Description: ${getValue(clientProfile.description)}
+- Industry / Niche: ${getValue(clientProfile.industry)}
+- Target Country: ${getValue(clientProfile.targetCountry)}
+- Target Audience: ${getValue(clientProfile.targetAudience)}
+- Primary SEO Goals: ${getValue(clientProfile.goals)}
+- Main Products & Services: ${getValue(clientProfile.productsServices)}
+- Priority Services & Products to promote: ${getValue(clientProfile.priorityServices)}
+- Key Competitors to beat: ${getValue(clientProfile.competitors)}
+- Existing Important Pages URLs: ${getValue(clientProfile.existingPages)}
+- Sitemap XML URL: ${getValue(clientProfile.sitemapUrl)}
+- Preferred Page Types to create: ${getValue(clientProfile.preferredPageTypes)}
+- Monthly Publishing Capacity: ${getValue(clientProfile.publishingCapacity)}
+- Existing SEO Data or Rankings: ${getValue(clientProfile.existingSeoData)}
+- Additional Strategic Notes: ${getValue(clientProfile.notes)}
+==========================================
+Please fully align your strategy, page blueprints, and categorizations to optimize for this specific client profile's business niche, audience, and goals.
+`;
+}
+
 // ============================================
 // WORKSPACE STORE ENDPOINTS
 // ============================================
@@ -156,7 +188,7 @@ app.delete("/api/workspaces/:id", async (req, res) => {
 
 // 1. Keyword Mapping + Clustering
 app.post("/api/gemini/cluster", async (req, res) => {
-  const { text, keywordsList, existingPages } = req.body;
+  const { text, keywordsList, existingPages, clientProfile } = req.body;
   if (!text && (!keywordsList || keywordsList.length === 0)) {
     return res.status(400).json({ error: "Please provide a raw keyword list or multi-line text block." });
   }
@@ -167,7 +199,11 @@ app.post("/api/gemini/cluster", async (req, res) => {
       ? `Existing URLs available in content inventory:\n${existingPages.map((p: any) => `- URL: ${p.url || p.slug || p} (Title: ${p.title || "Existing Page"})`).join("\n")}`
       : "No existing URLs in content inventory. Recommending new page creations.";
 
+    const clientContext = formatClientProfileContext(clientProfile);
+
     const prompt = `You are an elite, Enterprise-Grade AI SEO Strategist. Your goal is NOT to build simple keyword groups, but to design a precise, high-conversion Page Plan ("Upload keywords -> Get a page plan") matching senior-level enterprise standards.
+
+${clientContext}
 
 KEYWORDS INPUTS:
 ${text || JSON.stringify(keywordsList)}
@@ -291,14 +327,19 @@ Provide your response in raw JSON adhering strictly to the schema.`;
 
 // 2. Content Clustering / Hub Mapping
 app.post("/api/gemini/content-cluster", async (req, res) => {
-  const { contentDescription, existingClusters } = req.body;
+  const { contentDescription, existingClusters, clientProfile } = req.body;
   if (!contentDescription && (!existingClusters || existingClusters.length === 0)) {
     return res.status(400).json({ error: "Missing content inputs or existing keyword clusters." });
   }
 
   try {
     const ai = getGeminiClient();
+    const clientContext = formatClientProfileContext(clientProfile);
+
     const prompt = `Design a topical silo / Content Cluster Architecture based on the user's description and clusters. Create 1 large comprehensive Pillar Page and 2-4 supporting Subtopic Cluster Pages. Explain how the architecture links together internally.
+
+${clientContext}
+
 User focus & keywords targets:
 ${contentDescription || JSON.stringify(existingClusters)}`;
 
@@ -363,13 +404,14 @@ ${contentDescription || JSON.stringify(existingClusters)}`;
 
 // 3. Template Operations (Brief with specific SEO rules, Outline, Meta Tags, Word intent)
 app.post("/api/gemini/template", async (req, res) => {
-  const { type, params } = req.body;
+  const { type, params, clientProfile } = req.body;
   if (!type || !params) {
     return res.status(400).json({ error: "Template type and parameters are required." });
   }
 
   try {
     const ai = getGeminiClient();
+    const clientContext = formatClientProfileContext(clientProfile);
     let prompt = "";
 
     if (type === "brief") {
@@ -437,9 +479,11 @@ Generate detailed, highly readable answers that Google would love to display in 
 3. A complete, beautifully structured, copy-pasteable visual simulated JSON-LD Schema of type 'FAQPage' that matches the questions.`;
     }
 
+    const finalPrompt = clientContext ? `${clientContext}\n\n${prompt}` : prompt;
+
     const response = await ai.models.generateContent({
       model: "gemini-3.5-flash",
-      contents: prompt,
+      contents: finalPrompt,
       config: {
         responseMimeType: "application/json",
         responseSchema: {

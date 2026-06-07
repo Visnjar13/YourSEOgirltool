@@ -77,7 +77,7 @@ service cloud.firestore {
         && (
           // Whitelisting exact elements that are allowed to transition during edit/update
           incoming().diff(existing()).affectedKeys().hasOnly([
-            'name', 'description', 'isPublic', 'updatedAt', 'keywords', 'keywordClusters', 'contentClusters', 'templates', 'pageMappings', 'actionPlanTasks', 'contentInventoryPages'
+            'name', 'description', 'isPublic', 'updatedAt', 'keywords', 'keywordClusters', 'contentClusters', 'templates', 'pageMappings', 'actionPlanTasks', 'contentInventoryPages', 'clientProfile'
           ])
         );
 

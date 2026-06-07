@@ -119,7 +119,11 @@ export default function SEOTemplateGenerator({ workspace, onUpdateWorkspace }: S
       const response = await fetch("/api/gemini/template", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: activeTemp, params }),
+        body: JSON.stringify({ 
+          type: activeTemp, 
+          params,
+          clientProfile: workspace.clientProfile || null
+        }),
       });
 
       if (!response.ok) {

@@ -73,7 +73,10 @@ export default function KeywordClustering({
       const response = await fetch("/api/gemini/cluster", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: rawText }),
+        body: JSON.stringify({ 
+          text: rawText,
+          clientProfile: workspace.clientProfile || null
+        }),
       });
 
       if (!response.ok) {

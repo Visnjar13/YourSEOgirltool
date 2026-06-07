@@ -104,6 +104,25 @@ export interface SavedTemplate {
   createdAt: string;
 }
 
+export interface ClientProfile {
+  businessName: string;
+  websiteUrl: string;
+  description: string;
+  industry: string;
+  targetCountry: string;
+  targetAudience: string;
+  goals: string[];
+  productsServices: string[];
+  priorityServices: string[];
+  competitors: string[];
+  existingPages: string[];
+  sitemapUrl: string;
+  preferredPageTypes: string[];
+  publishingCapacity: string;
+  existingSeoData: string[];
+  notes: string;
+}
+
 export interface Workspace {
   id: string;
   name: string;
@@ -120,5 +139,6 @@ export interface Workspace {
   pageMappings?: PageMappingItem[];
   actionPlanTasks?: ActionPlanTask[];
   contentInventoryPages?: ContentInventoryPage[];
+  clientProfile?: ClientProfile;
 }
 

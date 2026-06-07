@@ -19,7 +19,7 @@ import {
   Layers, GitMerge, FileText, Share2, Plus, ArrowRight,
   FolderOpen, Trash2, HelpCircle, Check, Sparkles, ExternalLink, RefreshCw,
   LogIn, LogOut, Eye, Lock, Globe, Shield, ShieldAlert,
-  LayoutDashboard, Tag, Target, Users, Download, ChevronDown, CheckCircle2, ClipboardList, Settings, Sparkle, AlertTriangle, Play, TrendingUp
+  LayoutDashboard, Tag, Target, Users, Download, ChevronDown, CheckCircle2, ClipboardList, Settings, Sparkle, AlertTriangle, Play, TrendingUp, Pencil
 } from "lucide-react";
 import { 
   db, 
@@ -53,6 +53,82 @@ export default function App() {
   const [showNewWorkspaceModal, setShowNewWorkspaceModal] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [newWorkspaceDesc, setNewWorkspaceDesc] = useState("");
+  const [showEditWorkspaceModal, setShowEditWorkspaceModal] = useState(false);
+  const [editWorkspaceName, setEditWorkspaceName] = useState("");
+  const [editWorkspaceDesc, setEditWorkspaceDesc] = useState("");
+  const [newWsStep, setNewWsStep] = useState(1);
+  const [editWsStep, setEditWsStep] = useState(1);
+
+  // Strategic Client Profile inputs state
+  const [profileBusinessName, setProfileBusinessName] = useState("");
+  const [profileWebsiteUrl, setProfileWebsiteUrl] = useState("");
+  const [profileDescription, setProfileDescription] = useState("");
+  const [profileIndustry, setProfileIndustry] = useState("");
+  const [profileTargetCountry, setProfileTargetCountry] = useState("");
+  const [profileTargetAudience, setProfileTargetAudience] = useState("");
+  const [profileGoals, setProfileGoals] = useState("");
+  const [profileProductsServices, setProfileProductsServices] = useState("");
+  const [profilePriorityServices, setProfilePriorityServices] = useState("");
+  const [profileCompetitors, setProfileCompetitors] = useState("");
+  const [profileExistingPages, setProfileExistingPages] = useState("");
+  const [profileSitemapUrl, setProfileSitemapUrl] = useState("");
+  const [profilePreferredPageTypes, setProfilePreferredPageTypes] = useState("");
+  const [profilePublishingCapacity, setProfilePublishingCapacity] = useState("");
+  const [profileExistingSeoData, setProfileExistingSeoData] = useState("");
+  const [profileNotes, setProfileNotes] = useState("");
+
+  const parseCommaOrLineArray = (str: string): string[] => {
+    return str
+      .split(/[,\n]/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+  };
+
+  const handleOpenNewWorkspaceModal = () => {
+    setNewWorkspaceName("");
+    setNewWorkspaceDesc("");
+    setProfileBusinessName("");
+    setProfileWebsiteUrl("");
+    setProfileDescription("");
+    setProfileIndustry("");
+    setProfileTargetCountry("");
+    setProfileTargetAudience("");
+    setProfileGoals("");
+    setProfileProductsServices("");
+    setProfilePriorityServices("");
+    setProfileCompetitors("");
+    setProfileExistingPages("");
+    setProfileSitemapUrl("");
+    setProfilePreferredPageTypes("");
+    setProfilePublishingCapacity("");
+    setProfileExistingSeoData("");
+    setProfileNotes("");
+    setNewWsStep(1);
+    setShowNewWorkspaceModal(true);
+  };
+
+  const handleOpenEditWorkspaceModal = (ws: Workspace) => {
+    setEditWorkspaceName(ws.name);
+    setEditWorkspaceDesc(ws.description || "");
+    setProfileBusinessName(ws.clientProfile?.businessName || ws.name);
+    setProfileWebsiteUrl(ws.clientProfile?.websiteUrl || ws.description || "");
+    setProfileDescription(ws.clientProfile?.description || "");
+    setProfileIndustry(ws.clientProfile?.industry || "");
+    setProfileTargetCountry(ws.clientProfile?.targetCountry || "");
+    setProfileTargetAudience(ws.clientProfile?.targetAudience || "");
+    setProfileGoals(ws.clientProfile?.goals?.join("\n") || "");
+    setProfileProductsServices(ws.clientProfile?.productsServices?.join("\n") || "");
+    setProfilePriorityServices(ws.clientProfile?.priorityServices?.join("\n") || "");
+    setProfileCompetitors(ws.clientProfile?.competitors?.join("\n") || "");
+    setProfileExistingPages(ws.clientProfile?.existingPages?.join("\n") || "");
+    setProfileSitemapUrl(ws.clientProfile?.sitemapUrl || "");
+    setProfilePreferredPageTypes(ws.clientProfile?.preferredPageTypes?.join("\n") || "");
+    setProfilePublishingCapacity(ws.clientProfile?.publishingCapacity || "");
+    setProfileExistingSeoData(ws.clientProfile?.existingSeoData?.join("\n") || "");
+    setProfileNotes(ws.clientProfile?.notes || "");
+    setEditWsStep(1);
+    setShowEditWorkspaceModal(true);
+  };
   const [copiedLink, setCopiedLink] = useState(false);
   const [alert, setAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -240,6 +316,26 @@ export default function App() {
     if (!newWorkspaceName.trim()) return;
 
     const newId = (currentUser ? "cloud-" : "") + Math.random().toString(36).substring(2, 11);
+    
+    const profileObj = {
+      businessName: profileBusinessName.trim() || newWorkspaceName.trim(),
+      websiteUrl: profileWebsiteUrl.trim() || newWorkspaceDesc.trim(),
+      description: profileDescription.trim(),
+      industry: profileIndustry.trim(),
+      targetCountry: profileTargetCountry.trim(),
+      targetAudience: profileTargetAudience.trim(),
+      goals: parseCommaOrLineArray(profileGoals),
+      productsServices: parseCommaOrLineArray(profileProductsServices),
+      priorityServices: parseCommaOrLineArray(profilePriorityServices),
+      competitors: parseCommaOrLineArray(profileCompetitors),
+      existingPages: parseCommaOrLineArray(profileExistingPages),
+      sitemapUrl: profileSitemapUrl.trim(),
+      preferredPageTypes: parseCommaOrLineArray(profilePreferredPageTypes),
+      publishingCapacity: profilePublishingCapacity.trim(),
+      existingSeoData: parseCommaOrLineArray(profileExistingSeoData),
+      notes: profileNotes.trim()
+    };
+
     const newWs: Workspace = {
       id: newId,
       name: newWorkspaceName.trim(),
@@ -249,7 +345,8 @@ export default function App() {
       keywords: [],
       keywordClusters: [],
       contentClusters: [],
-      templates: []
+      templates: [],
+      clientProfile: profileObj
     };
 
     if (currentUser) {
@@ -326,6 +423,42 @@ export default function App() {
     };
     await handleSaveWorkspace(merged);
     triggerAlert("success", "Workspace adjustments persisted.");
+  };
+
+  const handleEditWorkspaceSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeWorkspace) return;
+    if (!editWorkspaceName.trim()) return;
+    if (isReadOnly) {
+      triggerAlert("error", "This shared workspace is in Read-Only mode. Sign in to design your own maps!");
+      return;
+    }
+
+    const profileObj = {
+      businessName: profileBusinessName.trim() || editWorkspaceName.trim(),
+      websiteUrl: profileWebsiteUrl.trim() || editWorkspaceDesc.trim(),
+      description: profileDescription.trim(),
+      industry: profileIndustry.trim(),
+      targetCountry: profileTargetCountry.trim(),
+      targetAudience: profileTargetAudience.trim(),
+      goals: parseCommaOrLineArray(profileGoals),
+      productsServices: parseCommaOrLineArray(profileProductsServices),
+      priorityServices: parseCommaOrLineArray(profilePriorityServices),
+      competitors: parseCommaOrLineArray(profileCompetitors),
+      existingPages: parseCommaOrLineArray(profileExistingPages),
+      sitemapUrl: profileSitemapUrl.trim(),
+      preferredPageTypes: parseCommaOrLineArray(profilePreferredPageTypes),
+      publishingCapacity: profilePublishingCapacity.trim(),
+      existingSeoData: parseCommaOrLineArray(profileExistingSeoData),
+      notes: profileNotes.trim()
+    };
+
+    await handleUpdateActiveWorkspace({
+      name: editWorkspaceName.trim(),
+      description: editWorkspaceDesc.trim(),
+      clientProfile: profileObj
+    });
+    setShowEditWorkspaceModal(false);
   };
 
   const handleForceSave = async () => {
@@ -681,7 +814,7 @@ broker lead generation pricing packages`;
                     <button
                       onClick={() => {
                         setShowWorkspaceDropdown(false);
-                        setShowNewWorkspaceModal(true);
+                        handleOpenNewWorkspaceModal();
                       }}
                       className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
@@ -1003,7 +1136,7 @@ broker lead generation pricing packages`;
             {/* Add Client button */}
             {activeWorkspace && (
               <button
-                onClick={() => setShowNewWorkspaceModal(true)}
+                onClick={handleOpenNewWorkspaceModal}
                 className="px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-3xs"
               >
                 <Plus className="w-3.5 h-3.5 text-slate-500" />
@@ -1031,14 +1164,45 @@ broker lead generation pricing packages`;
                   {/* Hero card from picture */}
                   <div className="bg-[#0b101d] rounded-2xl p-7 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center md:justify-between gap-6" id="dashboard-welcome-hero">
                     <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl -z-10 pointer-events-none"></div>
-                    <div className="space-y-1.5">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block font-mono">Welcome to Workspace</span>
-                      <h3 className="font-display text-2xl font-black text-white leading-tight">
-                        {activeWorkspace.name}
-                      </h3>
-                      <p className="text-xs text-blue-400 font-medium font-mono">
-                        {activeWorkspace.description && activeWorkspace.description.includes(".") && !activeWorkspace.description.includes(" ") ? activeWorkspace.description : "yourseogirl.com"}
-                      </p>
+                    <div className="space-y-3.5">
+                      <div className="space-y-1">
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block font-mono">Welcome to Workspace</span>
+                        <h3 className="font-display text-2xl font-black text-white leading-tight flex items-center gap-2">
+                          {activeWorkspace.name}
+                        </h3>
+                        <p className="text-xs text-blue-400 font-medium font-mono">
+                          {activeWorkspace.description && activeWorkspace.description.includes(".") && !activeWorkspace.description.includes(" ") ? activeWorkspace.description : "yourseogirl.com"}
+                        </p>
+                      </div>
+
+                      {/* Interactive Client Actions */}
+                      <div className="flex flex-wrap items-center gap-2 pt-2.5 border-t border-slate-800/60 max-w-lg">
+                        <button
+                          onClick={() => {
+                            setEditWorkspaceName(activeWorkspace.name);
+                            setEditWorkspaceDesc(activeWorkspace.description || "");
+                            setShowEditWorkspaceModal(true);
+                          }}
+                          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10.5px] font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer active:scale-98"
+                          title="Edit client metadata profile"
+                        >
+                          <Pencil className="w-3 h-3 text-[#e2ba3c]" />
+                          <span>Edit Client Details</span>
+                        </button>
+                        
+                        <button
+                          onClick={(e) => handleDeleteWorkspace(activeWorkspace.id, e)}
+                          className="px-3 py-1.5 bg-rose-950/20 hover:bg-rose-900/30 text-rose-200 text-[10.5px] font-bold rounded-lg border border-rose-500/10 transition-all flex items-center gap-1.5 cursor-pointer active:scale-98"
+                          title="Permanently remove client workspace"
+                        >
+                          <Trash2 className="w-3 h-3 text-rose-400" />
+                          <span>Delete Client</span>
+                        </button>
+
+                        <div className="text-[10px] text-slate-500 font-mono pl-1">
+                          Client ID: {activeWorkspace.id}
+                        </div>
+                      </div>
                     </div>
 
                     <button
@@ -1435,7 +1599,7 @@ broker lead generation pricing packages`;
                       <p className="text-xs text-slate-500 mt-1">Centralized lists of active workspaces tracking separate keyword mapping profiles.</p>
                     </div>
                     <button
-                      onClick={() => setShowNewWorkspaceModal(true)}
+                      onClick={handleOpenNewWorkspaceModal}
                       className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md shadow-blue-500/10 cursor-pointer"
                     >
                       <Plus className="w-4 h-4" />
@@ -1470,13 +1634,26 @@ broker lead generation pricing packages`;
 
                         <div className="pt-3 border-t border-slate-50 flex items-center justify-between">
                           <span className="text-[10px] font-mono text-slate-400">Modified: {new Date(ws.updatedAt).toLocaleDateString()}</span>
-                          <button
-                            onClick={(e) => handleDeleteWorkspace(ws.id, e)}
-                            className="p-1 px-1.5 text-slate-450 hover:text-rose-500 hover:bg-rose-50 rounded transition-colors cursor-pointer"
-                            title="Delete this client space"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveWorkspace(ws);
+                                handleOpenEditWorkspaceModal(ws);
+                              }}
+                              className="p-1 px-1.5 text-slate-450 hover:text-blue-600 hover:bg-blue-50/50 rounded transition-colors cursor-pointer"
+                              title="Edit this client space"
+                            >
+                              <Pencil className="w-3.5 h-3.5 text-blue-500" />
+                            </button>
+                            <button
+                              onClick={(e) => handleDeleteWorkspace(ws.id, e)}
+                              className="p-1 px-1.5 text-slate-450 hover:text-rose-500 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                              title="Delete this client space"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -1491,7 +1668,7 @@ broker lead generation pricing packages`;
               <h4 className="font-display font-semibold text-slate-800 text-sm">Workspace Selection Issue</h4>
               <p className="text-xs text-slate-500 leading-normal">Please configure or choose an active SEO campaign workspace from our side-bar profile launcher.</p>
               <button 
-                onClick={() => setShowNewWorkspaceModal(true)} 
+                onClick={handleOpenNewWorkspaceModal} 
                 className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-550/10"
               >
                 Create Starter Studio
@@ -1509,61 +1686,585 @@ broker lead generation pricing packages`;
 
       {/* 3. NEW WORKSPACE CREATION FORM MODAL */}
       {showNewWorkspaceModal && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" id="new-workspace-modal">
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-2xl max-w-md w-full p-6 space-y-5 animate-in fade-in zoom-in-95">
+        <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fade-in" id="new-workspace-modal">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-2xl max-w-3xl w-full p-6 space-y-4 animate-in fade-in zoom-in-95 leading-normal max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-display font-bold text-slate-850 text-base">New Client Campaign</h3>
+              <div>
+                <h3 className="font-display font-bold text-slate-850 text-base">New Client Campaign Workspace</h3>
+                <p className="text-[11px] text-slate-450">Set up the client strategy context & brand brain for Gemini AI engine.</p>
+              </div>
               <button
                 onClick={() => setShowNewWorkspaceModal(false)}
-                className="text-slate-455 hover:text-slate-805 text-sm font-semibold p-1"
+                className="text-slate-400 hover:text-slate-700 text-sm font-semibold p-1 select-none cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
+            {/* Stepper Tabs */}
+            <div className="flex items-center border-b border-slate-100 text-xs">
+              <button
+                type="button"
+                onClick={() => setNewWsStep(1)}
+                className={`flex-1 py-2.5 font-bold border-b-2 text-center transition-all ${newWsStep === 1 ? "border-blue-600 text-blue-600 bg-blue-50/20" : "border-transparent text-slate-455 hover:text-slate-705 hover:bg-slate-50/50"}`}
+              >
+                1. Brand & Identity
+              </button>
+              <button
+                type="button"
+                onClick={() => setNewWsStep(2)}
+                className={`flex-1 py-2.5 font-bold border-b-2 text-center transition-all ${newWsStep === 2 ? "border-blue-600 text-blue-600 bg-blue-50/20" : "border-transparent text-slate-455 hover:text-slate-705 hover:bg-slate-50/50"}`}
+              >
+                2. Goals & Audience
+              </button>
+              <button
+                type="button"
+                onClick={() => setNewWsStep(3)}
+                className={`flex-1 py-2.5 font-bold border-b-2 text-center transition-all ${newWsStep === 3 ? "border-blue-600 text-blue-600 bg-blue-50/20" : "border-transparent text-slate-455 hover:text-slate-705 hover:bg-slate-50/50"}`}
+              >
+                3. Strategy & Assets
+              </button>
+            </div>
+
             <form onSubmit={handleCreateWorkspace} className="space-y-4">
-              <div className="text-left">
-                <label className="text-xs font-bold text-slate-700 block mb-1">Client or Campaign Name</label>
-                <input
-                  type="text"
-                  required
-                  id="new-ws-name-input"
-                  placeholder="e.g., Proptech Realty"
-                  value={newWorkspaceName}
-                  onChange={(e) => setNewWorkspaceName(e.target.value)}
-                  className="w-full text-xs p-3.5 bg-slate-50/50 border border-slate-205 text-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-550/10 focus:border-blue-500 placeholder:text-slate-400"
-                  maxLength={50}
-                />
-              </div>
+              {newWsStep === 1 && (
+                <div className="space-y-4 animate-in fade-in duration-200 text-left">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Campaign Title *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g., Proptech Realty"
+                        value={newWorkspaceName}
+                        onChange={(e) => {
+                          setNewWorkspaceName(e.target.value);
+                          if (!profileBusinessName) setProfileBusinessName(e.target.value);
+                        }}
+                        className="w-full text-xs p-3 bg-slate-50 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 placeholder:text-slate-400"
+                        maxLength={50}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Primary Domain (Website URL) *</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., yourseogirl.com"
+                        value={newWorkspaceDesc}
+                        onChange={(e) => {
+                          setNewWorkspaceDesc(e.target.value);
+                          if (!profileWebsiteUrl) setProfileWebsiteUrl(e.target.value);
+                        }}
+                        className="w-full text-xs p-3 bg-slate-50 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-505/10 focus:border-blue-500 placeholder:text-slate-400 font-mono"
+                        maxLength={200}
+                      />
+                    </div>
+                  </div>
 
-              <div className="text-left">
-                <label className="text-xs font-bold text-slate-700 block mb-1">Target Description / Domain name</label>
-                <input
-                  type="text"
-                  id="new-ws-desc-input"
-                  placeholder="e.g., yourseogirl.com"
-                  value={newWorkspaceDesc}
-                  onChange={(e) => setNewWorkspaceDesc(e.target.value)}
-                  className="w-full text-xs p-3.5 bg-slate-50/50 border border-slate-205 text-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-555/10 focus:border-blue-500 placeholder:text-slate-400 font-mono"
-                  maxLength={200}
-                />
-              </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Business Name (Specific)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Proptech Brokerage LLC"
+                        value={profileBusinessName}
+                        onChange={(e) => setProfileBusinessName(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-505/10 focus:border-blue-500 placeholder:text-slate-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Industry / Niche</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Real Estate Property SAAS, Medical Care Dentist"
+                        value={profileIndustry}
+                        onChange={(e) => setProfileIndustry(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-505/10 focus:border-blue-500 placeholder:text-slate-400"
+                      />
+                    </div>
+                  </div>
 
-              <div className="flex gap-2.5 justify-end pt-3 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setShowNewWorkspaceModal(false)}
-                  className="px-4.5 py-2.5 font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-xl"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  id="submit-new-ws-btn"
-                  className="px-5 py-2.5 font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md cursor-pointer"
-                >
-                  Create Client
-                </button>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Business Description</label>
+                    <textarea
+                      placeholder="Detail what the business does, their core values, unique selling proposition and general history..."
+                      value={profileDescription}
+                      onChange={(e) => setProfileDescription(e.target.value)}
+                      className="w-full text-xs p-3 bg-slate-50 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 placeholder:text-slate-400 h-24 resize-none leading-relaxed"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {newWsStep === 2 && (
+                <div className="space-y-4 animate-in fade-in duration-200 text-left">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Target Country</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., United States, UK, Global"
+                        value={profileTargetCountry}
+                        onChange={(e) => setProfileTargetCountry(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-505/10 focus:border-blue-500 placeholder:text-slate-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Target Audience</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Startup Founders, Parents, Local Homeowners"
+                        value={profileTargetAudience}
+                        onChange={(e) => setProfileTargetAudience(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-505/10 focus:border-blue-500 placeholder:text-slate-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Publishing Capacity</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., 4 articles/month"
+                        value={profilePublishingCapacity}
+                        onChange={(e) => setProfilePublishingCapacity(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-505/10 focus:border-blue-500 placeholder:text-slate-400 font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Primary SEO Goals (One per line or comma-separated)</label>
+                      <textarea
+                        placeholder="e.g., Rank comparison content&#10;Dominate NYC broker queries&#10;Increase transactional signups"
+                        value={profileGoals}
+                        onChange={(e) => setProfileGoals(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 placeholder:text-slate-400 h-24 resize-none leading-relaxed"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Preferred Page Types (One per line or comma-separated)</label>
+                      <textarea
+                        placeholder="e.g., Service Page&#10;Blog Post&#10;Comparison Hub&#10;FAQ Page"
+                        value={profilePreferredPageTypes}
+                        onChange={(e) => setProfilePreferredPageTypes(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-550/10 focus:border-blue-500 placeholder:text-slate-400 h-24 resize-none leading-relaxed"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {newWsStep === 3 && (
+                <div className="space-y-4 animate-in fade-in duration-200 text-left">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="col-span-1 md:col-span-2">
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Sitemap URL</label>
+                      <input
+                        type="url"
+                        placeholder="https://clientsite.com/sitemap_index.xml"
+                        value={profileSitemapUrl}
+                        onChange={(e) => setProfileSitemapUrl(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-505/10 focus:border-blue-500 placeholder:text-slate-400 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Key Competitors (Lines/Commas)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Zillow, Redfin, Realtor.com"
+                        value={profileCompetitors}
+                        onChange={(e) => setProfileCompetitors(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-505/10 focus:border-blue-505 placeholder:text-slate-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Main Products & Services</label>
+                      <textarea
+                        placeholder="e.g., Commercial leasing&#10;Residential transaction workflow"
+                        value={profileProductsServices}
+                        onChange={(e) => setProfileProductsServices(e.target.value)}
+                        className="w-full text-[11px] p-2.5 bg-slate-50/50 border border-slate-200 rounded-xl h-16 resize-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Priority Products (to push)</label>
+                      <textarea
+                        placeholder="e.g., Residential transaction tracker app"
+                        value={profilePriorityServices}
+                        onChange={(e) => setProfilePriorityServices(e.target.value)}
+                        className="w-full text-[11px] p-2.5 bg-slate-50/50 border border-slate-200 rounded-xl h-16 resize-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Existing SEO Data / Ranks</label>
+                      <textarea
+                        placeholder="e.g., Ranks #4 for 'NYC transaction sheet'"
+                        value={profileExistingSeoData}
+                        onChange={(e) => setProfileExistingSeoData(e.target.value)}
+                        className="w-full text-[11px] p-2.5 bg-slate-50/50 border border-slate-200 rounded-xl h-16 resize-none font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Existing Important Pages (URLs - One per line)</label>
+                      <textarea
+                        placeholder="https://clientsite.com/nyc-brokerage&#10;https://clientsite.com/pricing"
+                        value={profileExistingPages}
+                        onChange={(e) => setProfileExistingPages(e.target.value)}
+                        className="w-full text-[11px] p-2.5 bg-slate-50/50 border border-slate-205 rounded-xl h-16 resize-none font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Additional Notes</label>
+                      <textarea
+                        placeholder="Any additional instructions or custom developer parameters..."
+                        value={profileNotes}
+                        onChange={(e) => setProfileNotes(e.target.value)}
+                        className="w-full text-[11px] p-2.5 bg-slate-50/50 border border-slate-205 rounded-xl h-16 resize-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex border-t border-slate-100 pt-4 items-center justify-between text-xs font-bold mt-2">
+                <div className="flex gap-2">
+                  {newWsStep > 1 ? (
+                    <button
+                      type="button"
+                      onClick={() => setNewWsStep(prev => prev - 1)}
+                      className="px-4 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl border border-slate-200 transition-colors select-none cursor-pointer"
+                    >
+                      ← Back
+                    </button>
+                  ) : (
+                    <div className="w-10"></div>
+                  )}
+                  {newWsStep < 3 && (
+                    <button
+                      type="button"
+                      onClick={() => setNewWsStep(prev => prev + 1)}
+                      className="px-4 py-2.5 bg-slate-50 hover:bg-blue-50 text-blue-650 border border-blue-100 rounded-xl hover:border-blue-200 transition-all select-none cursor-pointer"
+                    >
+                      Continue Step →
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowNewWorkspaceModal(false)}
+                    className="px-4 py-2.5 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-xl transition-colors select-none cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    id="submit-new-ws-btn"
+                    className="px-5 py-2.5 text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md shadow-blue-500/10 cursor-pointer"
+                  >
+                    Create Client Profile Brain
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 4. EDIT WORKSPACE / CLIENT CAMPAIGN FORM MODAL */}
+      {showEditWorkspaceModal && (
+        <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fade-in" id="edit-workspace-modal">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-2xl max-w-3xl w-full p-6 space-y-4 animate-in fade-in zoom-in-95 leading-normal max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-display font-bold text-slate-850 text-base flex items-center gap-2">
+                  <Pencil className="w-4 h-4 text-blue-600" />
+                  <span>Update Client Strategy Context</span>
+                </h3>
+                <p className="text-[11px] text-slate-450">Maintain and pivot the AI Search Strategy Context Brain of your active campaign.</p>
+              </div>
+              <button
+                onClick={() => setShowEditWorkspaceModal(false)}
+                className="text-slate-400 hover:text-slate-700 text-sm font-semibold p-1 select-none cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Stepper Tabs */}
+            <div className="flex items-center border-b border-slate-100 text-xs">
+              <button
+                type="button"
+                onClick={() => setEditWsStep(1)}
+                className={`flex-1 py-2.5 font-bold border-b-2 text-center transition-all ${editWsStep === 1 ? "border-blue-600 text-blue-600 bg-blue-50/20" : "border-transparent text-slate-455 hover:text-slate-705 hover:bg-slate-50/50"}`}
+              >
+                1. Brand & Identity
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditWsStep(2)}
+                className={`flex-1 py-2.5 font-bold border-b-2 text-center transition-all ${editWsStep === 2 ? "border-blue-600 text-blue-600 bg-blue-50/20" : "border-transparent text-slate-455 hover:text-slate-705 hover:bg-slate-50/50"}`}
+              >
+                2. Goals & Audience
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditWsStep(3)}
+                className={`flex-1 py-2.5 font-bold border-b-2 text-center transition-all ${editWsStep === 3 ? "border-blue-600 text-blue-600 bg-blue-50/20" : "border-transparent text-slate-455 hover:text-slate-705 hover:bg-slate-50/50"}`}
+              >
+                3. Strategy & Assets
+              </button>
+            </div>
+
+            <form onSubmit={handleEditWorkspaceSubmit} className="space-y-4">
+              {editWsStep === 1 && (
+                <div className="space-y-4 animate-in fade-in duration-200 text-left">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Campaign Title *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g., Proptech Realty"
+                        value={editWorkspaceName}
+                        onChange={(e) => setEditWorkspaceName(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50/55 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 placeholder:text-slate-400"
+                        maxLength={50}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Primary Domain (Website URL) *</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., yourseogirl.com"
+                        value={editWorkspaceDesc}
+                        onChange={(e) => setEditWorkspaceDesc(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50/55 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-505/10 focus:border-blue-500 placeholder:text-slate-400 font-mono"
+                        maxLength={200}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Business Name (Specific)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Proptech Brokerage LLC"
+                        value={profileBusinessName}
+                        onChange={(e) => setProfileBusinessName(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50/55 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-505/10 focus:border-blue-500 placeholder:text-slate-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Industry / Niche</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Real Estate Property SAAS, Medical Care Dentist"
+                        value={profileIndustry}
+                        onChange={(e) => setProfileIndustry(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50/55 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-505/10 focus:border-blue-500 placeholder:text-slate-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Business Description</label>
+                    <textarea
+                      placeholder="Detail what the business does, their core values, unique selling proposition and general history..."
+                      value={profileDescription}
+                      onChange={(e) => setProfileDescription(e.target.value)}
+                      className="w-full text-xs p-3 bg-slate-50/55 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 placeholder:text-slate-400 h-24 resize-none leading-relaxed"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {editWsStep === 2 && (
+                <div className="space-y-4 animate-in fade-in duration-200 text-left">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Target Country</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., United States, UK, Global"
+                        value={profileTargetCountry}
+                        onChange={(e) => setProfileTargetCountry(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50/55 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-505/10 focus:border-blue-500 placeholder:text-slate-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Target Audience</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Startup Founders, Parents, Local Homeowners"
+                        value={profileTargetAudience}
+                        onChange={(e) => setProfileTargetAudience(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50/55 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-505/10 focus:border-blue-500 placeholder:text-slate-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Publishing Capacity</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., 4 articles/month"
+                        value={profilePublishingCapacity}
+                        onChange={(e) => setProfilePublishingCapacity(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50/55 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-505/10 focus:border-blue-500 placeholder:text-slate-400 font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Primary SEO Goals (One per line or comma-separated)</label>
+                      <textarea
+                        placeholder="e.g., Track comparison metrics&#10;Rank comparison content&#10;Increase transactional signups"
+                        value={profileGoals}
+                        onChange={(e) => setProfileGoals(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50/55 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 placeholder:text-slate-400 h-24 resize-none leading-relaxed"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Preferred Page Types (One per line or comma-separated)</label>
+                      <textarea
+                        placeholder="e.g., Service Page&#10;Blog Post&#10;Comparison Hub&#10;FAQ Page"
+                        value={profilePreferredPageTypes}
+                        onChange={(e) => setProfilePreferredPageTypes(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50/55 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-550/10 focus:border-blue-500 placeholder:text-slate-400 h-24 resize-none leading-relaxed"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {editWsStep === 3 && (
+                <div className="space-y-4 animate-in fade-in duration-200 text-left">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="col-span-1 md:col-span-2">
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Sitemap URL</label>
+                      <input
+                        type="url"
+                        placeholder="https://clientsite.com/sitemap_index.xml"
+                        value={profileSitemapUrl}
+                        onChange={(e) => setProfileSitemapUrl(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50/55 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-505/10 focus:border-blue-500 placeholder:text-slate-400 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Key Competitors (Lines/Commas)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Zillow, Redfin, Realtor.com"
+                        value={profileCompetitors}
+                        onChange={(e) => setProfileCompetitors(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50/55 border border-slate-205 rounded-xl focus:ring-2 focus:ring-blue-505/10 focus:border-blue-505 placeholder:text-slate-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Main Products & Services</label>
+                      <textarea
+                        placeholder="e.g., Commercial leasing&#10;Residential transaction workflow"
+                        value={profileProductsServices}
+                        onChange={(e) => setProfileProductsServices(e.target.value)}
+                        className="w-full text-[11px] p-2.5 bg-slate-50/50 border border-slate-200 rounded-xl h-16 resize-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Priority Products (to push)</label>
+                      <textarea
+                        placeholder="e.g., Residential transaction tracker app"
+                        value={profilePriorityServices}
+                        onChange={(e) => setProfilePriorityServices(e.target.value)}
+                        className="w-full text-[11px] p-2.5 bg-slate-50/50 border border-slate-200 rounded-xl h-16 resize-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Existing SEO Data / Ranks</label>
+                      <textarea
+                        placeholder="e.g., Ranks #4 for 'NYC transaction sheet'"
+                        value={profileExistingSeoData}
+                        onChange={(e) => setProfileExistingSeoData(e.target.value)}
+                        className="w-full text-[11px] p-2.5 bg-slate-50/50 border border-slate-200 rounded-xl h-16 resize-none font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Existing Important Pages (URLs - One per line)</label>
+                      <textarea
+                        placeholder="https://clientsite.com/nyc-brokerage&#10;https://clientsite.com/pricing"
+                        value={profileExistingPages}
+                        onChange={(e) => setProfileExistingPages(e.target.value)}
+                        className="w-full text-[11px] p-2.5 bg-slate-50/55 border border-slate-205 rounded-xl h-16 resize-none font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block mb-1">Additional Notes</label>
+                      <textarea
+                        placeholder="Any additional notes or custom strategies..."
+                        value={profileNotes}
+                        onChange={(e) => setProfileNotes(e.target.value)}
+                        className="w-full text-[11px] p-2.5 bg-slate-50/55 border border-slate-205 rounded-xl h-16 resize-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex border-t border-slate-100 pt-4 items-center justify-between text-xs font-bold mt-2">
+                <div className="flex gap-2">
+                  {editWsStep > 1 ? (
+                    <button
+                      type="button"
+                      onClick={() => setEditWsStep(prev => prev - 1)}
+                      className="px-4 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl border border-slate-205 transition-colors select-none cursor-pointer"
+                    >
+                      ← Back
+                    </button>
+                  ) : (
+                    <div className="w-10"></div>
+                  )}
+                  {editWsStep < 3 && (
+                    <button
+                      type="button"
+                      onClick={() => setEditWsStep(prev => prev + 1)}
+                      className="px-4 py-2.5 bg-slate-50 hover:bg-blue-50 text-blue-650 border border-blue-100 rounded-xl hover:border-blue-200 transition-all select-none cursor-pointer"
+                    >
+                      Continue Step →
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditWorkspaceModal(false)}
+                    className="px-4 py-2.5 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-xl transition-colors select-none cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    id="submit-edit-ws-btn"
+                    className="px-5 py-2.5 text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md shadow-blue-500/10 cursor-pointer"
+                  >
+                    Save Strategy Profile Updates
+                  </button>
+                </div>
               </div>
             </form>
           </div>
