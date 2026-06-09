@@ -53,10 +53,7 @@ service cloud.firestore {
 
       // Check if user is the direct creator of the workspace
       function isWorkspaceCreator() {
-        return isSignedIn() && (
-          (resource != null && resource.data.createdBy == request.auth.uid) ||
-          (resource == null && incoming().createdBy == request.auth.uid)
-        );
+        return isSignedIn() && resource != null && resource.data.createdBy == request.auth.uid;
       }
 
       // Workspaces with isPublic set to true are visible to anyone

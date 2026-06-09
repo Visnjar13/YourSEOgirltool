@@ -322,7 +322,8 @@ export default function App() {
       if (err && err.code) {
         msg += ` (Error code: ${err.code})`;
         if (err.code === "auth/unauthorized-domain") {
-          msg = "This domain (app.yourseogirl.com) is not authorized in your Firebase console. Go to Firebase Console > Authentication > Settings > Authorized Domains and add 'app.yourseogirl.com' to allow logins on this domain.";
+          const host = window.location.hostname;
+          msg = `This domain (${host}) is not authorized in your Firebase console. Go to Firebase/Google Cloud Console > Authentication > Settings > Authorized Domains, ensure you have added '${host}', and wait 5 to 10 minutes for the setup to propagate across Google's CDN before refreshing the page.`;
         } else if (err.code === "auth/popup-blocked") {
           msg = "The authentication popup was blocked by your browser settings. Please enable popups for this site.";
         }
