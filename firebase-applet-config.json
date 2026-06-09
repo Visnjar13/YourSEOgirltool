@@ -1,10 +1,10 @@
 {
-  "projectId": "serious-transit-1fbwx",
-  "appId": "1:1049494817031:web:52a3c309d4385f7c37dda2",
-  "apiKey": "AIzaSyCmsk9789TOU70oUWby3M23uF_8bmwGeMc",
-  "authDomain": "serious-transit-1fbwx.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-b642ca23-f4d7-46f4-9bed-a0bdfcef9ddd",
-  "storageBucket": "serious-transit-1fbwx.firebasestorage.app",
-  "messagingSenderId": "1049494817031",
-  "measurementId": ""
+  "projectId": "yourseogirl-tool",
+  "appId": "1:139956604456:web:55647bc627c29482b7af1d",
+  "apiKey": "AIzaSyBjt7fWEXZcnKV-KSox1aiVJKhUC1xh_ns",
+  "authDomain": "yourseogirl-tool.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "yourseogirl-tool.firebasestorage.app",
+  "messagingSenderId": "139956604456",
+  "measurementId": "G-2F6LQ2719H"
 }
