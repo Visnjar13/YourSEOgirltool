@@ -56,8 +56,11 @@ service cloud.firestore {
         return isSignedIn() && resource != null && resource.data.createdBy == request.auth.uid;
       }
 
-      // Workspaces with isPublic set to true are visible to anyone
-      allow read: if (resource != null && resource.data.isPublic == true) || (isWorkspaceCreator());
+      // Workspaces with isPublic set to true are visible to anyone (single document fetch)
+      allow get: if (resource != null && resource.data.isPublic == true) || (isWorkspaceCreator());
+      
+      // Query lists are only allowed if explicitly checking ownership
+      allow list: if isSignedIn() && resource.data.createdBy == request.auth.uid;
       
       allow create: if isVerified() 
         && isValidId(workspaceId) 
@@ -99,16 +102,16 @@ service cloud.firestore {
         }
 
         // Derives permissions from the parent Workspace
-        allow read: if get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.isPublic == true || 
-          get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid;
+        allow read: if get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.get('isPublic', false) == true || 
+          get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.get('createdBy', '') == request.auth.uid;
 
         allow create: if isVerified() 
           && isValidId(keywordId)
-          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid
+          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.get('createdBy', '') == request.auth.uid
           && isValidKeywordItem(incoming());
 
         allow update: if isVerified()
-          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid
+          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.get('createdBy', '') == request.auth.uid
           && isValidKeywordItem(incoming())
           && (
             incoming().diff(existing()).affectedKeys().hasOnly([
@@ -117,7 +120,7 @@ service cloud.firestore {
           );
 
         allow delete: if isVerified() 
-          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid;
+          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.get('createdBy', '') == request.auth.uid;
       }
 
       // Content Clusters Subcollection
@@ -131,16 +134,16 @@ service cloud.firestore {
             && (data.get('subtopics', []) is list && data.get('subtopics', []).size() <= 100);
         }
 
-        allow read: if get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.isPublic == true || 
-          get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid;
+        allow read: if get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.get('isPublic', false) == true || 
+          get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.get('createdBy', '') == request.auth.uid;
 
         allow create: if isVerified()
           && isValidId(clusterId)
-          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid
+          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.get('createdBy', '') == request.auth.uid
           && isValidContentCluster(incoming());
 
         allow update: if isVerified()
-          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid
+          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.get('createdBy', '') == request.auth.uid
           && isValidContentCluster(incoming())
           && (
             incoming().diff(existing()).affectedKeys().hasOnly([
@@ -149,7 +152,7 @@ service cloud.firestore {
           );
 
         allow delete: if isVerified()
-          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid;
+          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.get('createdBy', '') == request.auth.uid;
       }
 
       // SEOTemplate Subcollection
@@ -164,17 +167,17 @@ service cloud.firestore {
             && data.outputJson is string && data.outputJson.size() <= 250000;
         }
 
-        allow read: if get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.isPublic == true || 
-          get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid;
+        allow read: if get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.get('isPublic', false) == true || 
+          get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.get('createdBy', '') == request.auth.uid;
 
         allow create: if isVerified()
           && isValidId(templateId)
-          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid
+          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.get('createdBy', '') == request.auth.uid
           && isValidSEOTemplate(incoming())
           && incoming().createdAt is string && incoming().createdAt.size() <= 40;
 
         allow update: if isVerified()
-          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid
+          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.get('createdBy', '') == request.auth.uid
           && isValidSEOTemplate(incoming())
           && incoming().createdAt == existing().createdAt
           && (
@@ -184,7 +187,7 @@ service cloud.firestore {
           );
 
         allow delete: if isVerified()
-          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.createdBy == request.auth.uid;
+          && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.get('createdBy', '') == request.auth.uid;
       }
     }
   }
